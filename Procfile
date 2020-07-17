@@ -1,1 +1,1 @@
-web: gunicorn Plotly_MIT:server
+web: gunicorn gettingstarted.wsgi --log-file -
