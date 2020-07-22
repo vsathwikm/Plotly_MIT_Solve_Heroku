@@ -17,10 +17,6 @@ styles = {
 from flask import Flask 
   
 app = Flask(__name__) 
-  
-@app.route("/") 
-def home_view(): 
-        return "<h1>Welcome to Geeks for Geeks</h1>"
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server # the Flask app
@@ -50,18 +46,18 @@ total_fig.update_layout(
     #paper_bgcolor="LightSteelBlue",
 )
 
-# Getting first Solver Table
+# Getting first Solver Table from dropdown bar
 solver_needs_df = pd.read_csv("excel_to_csv/solver_team_data.csv")
 selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns')
 selected_solver_row_info_list = list(solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns'))
 
-# Getting first Mentor Table
+# Getting first Mentor Table - will be blank initially
 mentor_data_df = pd.read_csv("excel_to_csv/partner_data.csv")
 selected_mentor_row_info = mentor_data_df[mentor_data_df['Org']==Mentors[0]].dropna(axis='columns')
 selected_mentor_row_info_list = list(mentor_data_df[mentor_data_df['Org']==Mentors[0]].dropna(axis='columns'))
 
 
-# creates a dictionary to put in options of selected_solver_table
+# Creates a dictionary of all the Solver info to put in the options of selected_solver_table
 selected_solver_row_list = []
 for col in selected_solver_row_info:
     ind_row_dict = {}
@@ -70,7 +66,7 @@ for col in selected_solver_row_info:
     selected_solver_row_list.append(ind_row_dict)
 
 
-# creates a dictionary to put in options of drop down menu
+# Creates a dictionary to put all Solvers as options of drop down menu
 solver_list_dict = []
 for solver in Solvers:
     ind_solver_dict = {}
@@ -78,7 +74,8 @@ for solver in Solvers:
     ind_solver_dict["value"]=solver
     solver_list_dict.append(ind_solver_dict)
 
-# generates tables
+# Method that generates tables
+# Used to for the selected_solver_table and clicked_on_mentor_table
 def generate_table(dataframe, max_rows=10):
     return html.Table([
         html.Thead(
@@ -91,6 +88,7 @@ def generate_table(dataframe, max_rows=10):
         ])
     ])
 
+
 app.layout = html.Div(children=[
     html.H1(
         children='MIT_SOLVE',
@@ -100,7 +98,7 @@ app.layout = html.Div(children=[
         }
     ),
 
-    # drop down menu
+    # Drop down menu
     html.Label('Select a Solver'),
         dcc.Dropdown(
             id='Solver_dropdown',
@@ -112,13 +110,13 @@ app.layout = html.Div(children=[
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.H2(children='Total Outputs Graph', style={'textAlign': 'center'}),
 
-    # display graph
+    # Display graph for total score
     dcc.Graph( 
         id='output_bargraph',
         figure= total_fig
     ),
 
-    # generate table for solver
+    # Generates the table for the selected solver from the dropdown
     html.H4(children='Selected Solver Information',style={'textAlign': 'center'}),
     dash_table.DataTable(
         id='selected_solver_table',
@@ -141,7 +139,7 @@ app.layout = html.Div(children=[
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
 
-    # generate table for mentor
+    # Generates table for the clicked on mentor
     html.H4(children='Clicked on Mentor Information',style={'textAlign': 'center'}),
     dash_table.DataTable(
         id='clicked_on_mentor_table',
