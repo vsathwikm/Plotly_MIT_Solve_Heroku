@@ -1,10 +1,10 @@
 import os
-import dash
 import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
 import pandas as pd
+import dash
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 styles = {
