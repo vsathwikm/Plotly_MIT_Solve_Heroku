@@ -163,6 +163,8 @@ app.layout = html.Div(children=[
 
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
+    html.P(children=html.Br(), style={'textAlign': 'center'}),
+    html.P(children=html.Br(), style={'textAlign': 'center'}),
 
 ])
 
