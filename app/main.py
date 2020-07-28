@@ -1,3 +1,9 @@
+# for file reading
+import base64
+import datetime
+import io
+
+# for app
 import os
 import dash_table
 import dash_core_components as dcc
@@ -88,15 +94,69 @@ def generate_table(dataframe, max_rows=10):
         ])
     ])
 
+# List of lists containing filenames and dfs that are from the uploaded files
+# This should only contain 2 entries, one for solver needs and
+# one for mentor info
+list_of_uploaded_files = []
 
+# Method used to parse files from upload button
+def parse_contents(contents, filename, date):
+    content_type, content_string = contents.split(',')
+    decoded = base64.b64decode(content_string)
+    current_file = []
+    current_file.append(filename)
+    try:
+        if 'csv' in filename:
+            # Assume that the user uploaded a CSV file
+            df = pd.read_csv(
+                io.StringIO(decoded.decode('utf-8')))
+        elif 'xls' in filename:
+            # Assume that the user uploaded an excel file
+            df = pd.read_excel(io.BytesIO(decoded))
+    except Exception as e:
+        print(e)
+        return html.Div([
+            'There was an error processing this file.'
+        ])
+    current_file.append(df)
+    list_of_uploaded_files.append(current_file)
+    # Returns an html table of the df to be printed currently
+    return html.Div([
+        html.H5(filename),
+        dash_table.DataTable(
+            data=df.to_dict('records'),
+            columns=[{'name': i, 'id': i} for i in df.columns]
+        ),
+    ])
+
+# APP LAYOUT
 app.layout = html.Div(children=[
     html.H1(
-        children='MIT_SOLVE',
+        children='MIT SOLVE',
         style={
             'textAlign': 'center'
             
         }
     ),
+
+    # Upload files
+    dcc.Upload(
+        id='upload-data',
+        children=html.Button('Upload Files'),
+        style={
+            # 'width': '50%',
+            'height': '60px',
+            # 'lineHeight': '60px',
+            # 'borderWidth': '1px',
+            # 'borderStyle': 'dashed',
+            # 'borderRadius': '5px',
+            'textAlign': 'center',
+            # 'margin': '10px'
+        },
+        # Allow multiple files to be uploaded
+        multiple=True
+    ),
+
 
     # Drop down menu
     html.Label('Select a Solver'),
@@ -164,6 +224,9 @@ app.layout = html.Div(children=[
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
 
+    # printing df from uploaded file
+    html.Div(id='output-data-upload'),
+
 ])
 
 # This method will update the table displaying more information
@@ -201,6 +264,25 @@ def update_graph(value):
     labels = {'Unnamed: 0':'MENTOR',value:'Total Score'})
     total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
     return total_fig
+
+
+# This method will print out the df from an uploaded file
+@app.callback(
+    dash.dependencies.Output('output-data-upload', 'children'),
+    [dash.dependencies.Input('upload-data', 'contents')],
+    [dash.dependencies.State('upload-data', 'filename'),
+    dash.dependencies.State('upload-data', 'last_modified')])
+def update_output(list_of_contents, list_of_names, list_of_dates):
+    if list_of_contents is not None:
+        children = [
+            # parse_contents prints out the files as tables
+            parse_contents(c, n, d) for c, n, d in
+            zip(list_of_contents, list_of_names, list_of_dates)]
+        # list_of_uploaded_files
+        print(list_of_uploaded_files)
+        return children
+    
+
 
 
 if __name__ == '__main__':

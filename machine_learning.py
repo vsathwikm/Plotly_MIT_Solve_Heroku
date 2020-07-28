@@ -12,6 +12,7 @@ keep_default_na=True
 matches_df = all_matches_df[0:59].fillna(0)
 #print(matches_df)
 
+# will be a dictionary containing all the matches for each mentor
 mentor_matches_dict = {}
 
 # iterate through each row
