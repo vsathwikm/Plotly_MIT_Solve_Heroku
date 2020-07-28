@@ -20,7 +20,7 @@ import dash
 
 # adding basic Auth 
 VALID_USERNAME_PASSWORD_PAIRS = {
-    'mit': 'solve'
+    'mit': 'solve2020'
 }
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
