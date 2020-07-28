@@ -8,10 +8,15 @@ import os
 import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_auth
 import plotly.express as px
 import pandas as pd
 import dash
 
+# adding basic Auth 
+VALID_USERNAME_PASSWORD_PAIRS = {
+    'mit': 'solve'
+}
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 styles = {
     'pre': {
@@ -26,6 +31,10 @@ app = Flask(__name__)
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server # the Flask app
+auth = dash_auth.BasicAuth(
+    app,
+    VALID_USERNAME_PASSWORD_PAIRS
+)
 
 # total score df
 df_total_score = pd.read_csv('total_Score.csv')
