@@ -3,6 +3,12 @@ import base64
 import datetime
 import io
 
+# for auth
+import dash_auth
+
+# will turn excel into csv
+from split_xlsx import ExceltoCSV
+
 # for app
 import os
 import dash_table
@@ -11,6 +17,11 @@ import dash_html_components as html
 import plotly.express as px
 import pandas as pd
 import dash
+
+# adding basic Auth 
+VALID_USERNAME_PASSWORD_PAIRS = {
+    'mit': 'solve'
+}
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 styles = {
@@ -26,6 +37,10 @@ app = Flask(__name__)
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server # the Flask app
+auth = dash_auth.BasicAuth(
+    app,
+    VALID_USERNAME_PASSWORD_PAIRS
+)
 
 # total score df
 df_total_score = pd.read_csv('total_Score.csv')
@@ -94,22 +109,30 @@ def generate_table(dataframe, max_rows=10):
         ])
     ])
 
-# List of lists containing filenames and dfs that are from the uploaded files
-# This should only contain 2 entries, one for solver needs and
-# one for mentor info
-list_of_uploaded_files = []
 
 # Method used to parse files from upload button
 def parse_contents(contents, filename, date):
+    '''
+    contents - contents of the file being uploaded
+    filename - name of the file being uploaded
+    date - time the file is uploaded
+
+    This method will take in the excel file that is
+    uploaded and will create csv files of each sheet
+    in the directory 'uploaded_excel_to_csv' which is 
+    in the root directory
+
+    It also has to potential to print out sheets that
+    are uploaded
+    '''
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
-    current_file = []
-    current_file.append(filename)
     try:
         if 'csv' in filename:
             # Assume that the user uploaded a CSV file
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8')))
+            return html.Div([
+            'Please upload on excel sheets.'
+        ])
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
             df = pd.read_excel(io.BytesIO(decoded))
@@ -118,16 +141,16 @@ def parse_contents(contents, filename, date):
         return html.Div([
             'There was an error processing this file.'
         ])
-    current_file.append(df)
-    list_of_uploaded_files.append(current_file)
+    ExceltoCSV(excel_file=filename , csv_file_base_path ="" )
     # Returns an html table of the df to be printed currently
-    return html.Div([
-        html.H5(filename),
-        dash_table.DataTable(
-            data=df.to_dict('records'),
-            columns=[{'name': i, 'id': i} for i in df.columns]
-        ),
-    ])
+    # return html.Div([
+    #     html.H5(filename),
+    #     dash_table.DataTable(
+    #         data=df.to_dict('records'),
+    #         columns=[{'name': i, 'id': i} for i in df.columns]
+    #     ),
+    # ])
+    return None
 
 # APP LAYOUT
 app.layout = html.Div(children=[
@@ -266,7 +289,10 @@ def update_graph(value):
     return total_fig
 
 
-# This method will print out the df from an uploaded file
+# This method will create csv files for each sheet
+# from the uploaded file. The file must be in the format of
+# a singular excel file consisting of 2 sheets, which are the 
+# partner_data and solver_team_data
 @app.callback(
     dash.dependencies.Output('output-data-upload', 'children'),
     [dash.dependencies.Input('upload-data', 'contents')],
@@ -278,8 +304,8 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             # parse_contents prints out the files as tables
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
-        # list_of_uploaded_files
-        print(list_of_uploaded_files)
+        # list_of_uploaded_files is fully available here
+        #print(list_of_uploaded_files)
         return children
     
 
