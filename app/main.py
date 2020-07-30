@@ -3,11 +3,14 @@ import base64
 import datetime
 import io
 
+# for creating the new total_score.xlsx
+import create_total_score
+
 # for auth
 import dash_auth
+from flask import Flask 
 
-# will turn excel into csv
-# from split_xlsx import ExceltoCSV
+# for turning excel into csv
 import csv
 import xlrd
 import sys
@@ -21,9 +24,9 @@ import plotly.express as px
 import pandas as pd
 import dash
 
-# adding basic Auth 
+# for adding basic Auth 
 VALID_USERNAME_PASSWORD_PAIRS = {
-    'mit': 'solve2020'
+    'mit': 'solve'
 }
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -34,8 +37,6 @@ styles = {
     }
 }
 
-from flask import Flask 
-  
 app = Flask(__name__) 
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -51,15 +52,20 @@ df_total_score = pd.read_csv('total_Score.csv')
 Solvers = list(df_total_score.columns[1:])
 # List of mentors
 Mentors = list(df_total_score["Unnamed: 0"])
+
+# Sort total score df to top 5 for initial selected solver -> Solvers[0]
+# sorted_df = df_total_score.sort_values(Solvers[0], ascending=False)
+#print(cropped_total_dcore_df)
+
 # bar graph of total score for a specific solver
-total_fig = px.bar(df_total_score, x=Solvers[0], y="Unnamed: 0",
-labels = {'Unnamed: 0':'MENTOR',Solvers[0]:'Total Score'})
+total_fig = px.bar(df_total_score.sort_values(Solvers[0], ascending=False)[:5], x=Solvers[0], 
+y="Unnamed: 0", labels = {'Unnamed: 0':'MENTOR',Solvers[0]:'Total Score'})
 total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
 # Format the bar graph
 total_fig.update_layout(
-    autosize=False,
-    width=900,
-    height=1000,
+    autosize=True,
+    # width=700,
+    height=500,
     margin=dict(
         l=50,
         r=50,
@@ -146,6 +152,7 @@ def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "uploaded_excel_to_c
         csvfile.close()
         print( "{} has been saved at {}".format(sheet_name, csv_file_full_path))
 
+
 # Method used to parse files from upload button
 def parse_contents(contents, filename, date):
     '''
@@ -167,7 +174,7 @@ def parse_contents(contents, filename, date):
         if 'csv' in filename:
             # Assume that the user uploaded a CSV file
             return html.Div([
-            'Please upload on excel sheets.'
+            'Please upload an excel sheets.'
         ])
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
@@ -203,16 +210,10 @@ app.layout = html.Div(children=[
     # Upload files
     dcc.Upload(
         id='upload-data',
-        children=html.Button('Upload Files'),
+        children=html.Button('Upload Excel File'),
         style={
-            # 'width': '50%',
             'height': '60px',
-            # 'lineHeight': '60px',
-            # 'borderWidth': '1px',
-            # 'borderStyle': 'dashed',
-            # 'borderRadius': '5px',
             'textAlign': 'center',
-            # 'margin': '10px'
         },
         # Allow multiple files to be uploaded
         multiple=True
@@ -237,6 +238,13 @@ app.layout = html.Div(children=[
         figure= total_fig
     ),
 
+    # Comment box
+    # dcc.Textarea(
+    #     id='textarea-for-comments',
+    #     value='Textarea for comments',
+    #     style={'width': '50%', 'height': 200, 'Align-items': 'center'},
+    # ),
+
     # Generates the table for the selected solver from the dropdown
     html.H4(children='Selected Solver Information',style={'textAlign': 'center'}),
     dash_table.DataTable(
@@ -247,7 +255,7 @@ app.layout = html.Div(children=[
         'whiteSpace': 'normal',
         'height': 'auto',
         'textAlign': 'center',
-         'font_family': 'helvetica',
+        'font_family': 'helvetica',
         'font_size': '20px',
         },
         style_header={
@@ -321,8 +329,12 @@ def update_solver_table(value):
     dash.dependencies.Output('output_bargraph', 'figure'),
     [dash.dependencies.Input('Solver_dropdown', 'value')])
 def update_graph(value):
-    total_fig = px.bar(df_total_score, x=value, y="Unnamed: 0",
-    labels = {'Unnamed: 0':'MENTOR',value:'Total Score'})
+    # Sort and crop top 5 values for new selected solver
+    # new_sorted_df = df_total_score.sort_values(value, ascending=False)
+    # total_fig = px.bar(df_total_score[:5], x=value, y="Unnamed: 0",
+    # total_fig = px.bar(df_total_score, x=value, y="Unnamed: 0",
+    total_fig = px.bar(df_total_score.sort_values(value, ascending=False)[:5], x=value, 
+    y="Unnamed: 0", labels = {'Unnamed: 0':'MENTOR',value:'Total Score'})
     total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
     return total_fig
 
@@ -344,7 +356,19 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             zip(list_of_contents, list_of_names, list_of_dates)]
         # list_of_uploaded_files is fully available here
         #print(list_of_uploaded_files)
-        return children
+        new_total_score = create_total_score.create_total_score_excel()
+        new_total_score.insert(0, "Partners", Mentors, True)
+        # Returns an html table of the df to be printed currently
+
+        # print(new_total_score)
+        return html.Div([
+            html.H5("Calculate Total Score Table"),
+            dash_table.DataTable(
+                data=new_total_score.to_dict('records'),
+                columns=[{'name': item, 'id': item} for item in new_total_score.columns]
+            ),
+        ])
+        # return children
     
 
 
