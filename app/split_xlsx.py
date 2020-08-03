@@ -5,7 +5,7 @@ import sys
 import os
 
 
-def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "excel_to_csv/"):
+def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "uploaded_excel_to_csv/"):
     """
     inputs:
     Excel file, str - name of the original file

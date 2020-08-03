@@ -369,8 +369,9 @@ def pivot_table_stage(st_solver, st_partners, export=False):
                                       index=["Org_y"],
                                       columns=["Org_x"],
                                       aggfunc=np.sum)
-    merged_st_ptable = merged_st_ptable.fillna(0).reset_index()
-    
+    #merged_st_ptable = merged_st_ptable.fillna(0).reset_index()
+    merged_st_ptable = merged_st_ptable.fillna(0)
+
     if export == True: 
         merged_st_ptable.to_excel("stage_match.xlsx")
     stage_pivot = merged_st_ptable.copy()
@@ -380,7 +381,7 @@ def pivot_table_stage(st_solver, st_partners, export=False):
 
     stage_pivot = stage_pivot.rename(index=st_partners["Org"])
     stage_pivot_copy = stage_pivot.copy()
-    stage_pivot_copy = stage_pivot_copy.drop(labels="Org_y", axis=1)
+    #stage_pivot_copy = stage_pivot_copy.drop(labels="Org_y", axis=1)
     stage_pivot_copy
     
     return stage_pivot, stage_pivot_copy
