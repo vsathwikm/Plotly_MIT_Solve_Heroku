@@ -10,6 +10,10 @@ import create_total_score
 import dash_auth
 from flask import Flask 
 
+# for downloading excel file
+import dash_table_experiments as dte
+from flask import send_file
+
 # for turning excel into csv
 import csv
 import xlrd
@@ -219,6 +223,16 @@ app.layout = html.Div(children=[
         multiple=True
     ),
 
+    # Download total_score excel
+
+    html.Div(children=[
+        html.A(html.Button('Download Excel Files'), href="/download_excel/",
+        ),
+    ],
+    style={
+        'height': '60px',
+        'textAlign': 'center',
+    }),
 
     # Drop down menu
     html.Label('Select a Solver'),
@@ -298,6 +312,25 @@ app.layout = html.Div(children=[
 
 ])
 
+@app.server.route('/download_excel/')
+def download_excel():
+    # Export total score
+    # Create DF
+    xls_file = pd.ExcelFile('total_score_from_upload.xlsx')
+    total_score_df = xls_file.parse('Sheet1')
+    # Convert DF
+    strIO = io.BytesIO()
+    excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
+    total_score_df.to_excel(excel_writer, sheet_name="sheet1")
+    excel_writer.save()
+    excel_data = strIO.getvalue()
+    strIO.seek(0)
+
+    return send_file(strIO,
+                     attachment_filename='Total_Score_Excel.xlsx',
+                     as_attachment=True)
+
+
 # This method will update the table displaying more information
 # on any mentor that is clicked on in the graph
 @app.callback(
@@ -369,8 +402,6 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             ),
         ])
         # return children
-    
-
 
 
 if __name__ == '__main__':
