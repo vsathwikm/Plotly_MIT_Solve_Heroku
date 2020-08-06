@@ -56,6 +56,7 @@ auth = dash_auth.BasicAuth(
 # Creating the graph 
 xls_file_total_score = pd.ExcelFile('total_score.xlsx')
 df_total_score = xls_file_total_score.parse('Sheet1')
+
 # list of solvers
 Solvers = list(df_total_score.columns[1:])
 # List of mentors
@@ -393,13 +394,13 @@ def update_graph_from_solver_dropdown(value):
 def update_output(list_of_contents, list_of_names, list_of_dates):
     if list_of_contents is not None:
         # list_of_uploaded_files is fully available here
-        new_total_score = create_total_score.create_total_score_excel()
-        new_total_score.insert(0, "Partners", Mentors, True)
         children = [
             # parse_contents prints out the files as tables
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
-        
+        # these two lines below are what could potentially cause zip file errors
+        new_total_score = create_total_score.create_total_score_excel()
+        new_total_score.insert(0, "Partners", Mentors, True)
         # Returns an html table of the df to be printed currently
         return html.Div([
             html.H5("Calculate Total Score Table"),
