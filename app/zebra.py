@@ -10,7 +10,7 @@ def csv_to_df(file_name):
     :return: DataFrame containing the data from file_name  
     :rtype: pandas.DataFrame
     """
-    path_csv_folder = 'excel_to_csv/'    
+    path_csv_folder = 'uploaded_excel_to_csv/'    
     csv_df = pd.read_csv(path_csv_folder+file_name)
     return csv_df 
 
@@ -119,7 +119,7 @@ def pivot_table_geo( unpivoted_solver_geo, partners_geo, export=False):
                                        values='geo',
                                        aggfunc=np.sum).fillna(0)
     if export==True: 
-        geo_pivot.to_excel("geo_match.xlsx")
+        geo_pivot.to_excel("MIT_SOLVE_downloadable_excel_files/geo_match.xlsx")
 
     geo_pivot_copy = geo_pivot_values.copy()
     for col in geo_pivot_copy.columns: 
@@ -223,7 +223,7 @@ def pivot_table_needs(unpivoted_solver_needs, partners_needs, export=False):
                                 values="needs_match",
                                 aggfunc=np.sum)
     if export == True: 
-        needs_pivot.to_excel("needs_match.xlsx")
+        needs_pivot.to_excel("MIT_SOLVE_downloadable_excel_files/needs_match.xlsx")
     need_pivot_values = pd.pivot_table(merged_needs,
                                        index="Org_y",
                                        columns="Org_x",
@@ -300,7 +300,7 @@ def pivot_table_challenges(ch_solver, ch_partners_reset, export=False):
                                         aggfunc=np.sum)
     
     if export == True:
-        merged_pivot_table.to_excel("challenge_match.xlsx")
+        merged_pivot_table.to_excel("MIT_SOLVE_downloadable_excel_files/challenge_match.xlsx")
     challenges_pivot = merged_pivot_table.copy()
     challenges_pivot = challenges_pivot.fillna(0)
     challenges_pivot_nulled = challenges_pivot.isnull()
@@ -373,7 +373,7 @@ def pivot_table_stage(st_solver, st_partners, export=False):
     merged_st_ptable = merged_st_ptable.fillna(0)
 
     if export == True: 
-        merged_st_ptable.to_excel("stage_match.xlsx")
+        merged_st_ptable.to_excel("MIT_SOLVE_downloadable_excel_files/stage_match.xlsx")
     stage_pivot = merged_st_ptable.copy()
 
     for col in stage_pivot.columns: 

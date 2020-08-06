@@ -13,6 +13,7 @@ from flask import Flask
 # for downloading excel file
 import dash_table_experiments as dte
 from flask import send_file
+import zipfile
 
 # for turning excel into csv
 import csv
@@ -51,12 +52,15 @@ auth = dash_auth.BasicAuth(
     VALID_USERNAME_PASSWORD_PAIRS
 )
 
-# total score df
-df_total_score = pd.read_csv('total_Score.csv')
+
+
+# Creating the graph 
+xls_file_total_score = pd.ExcelFile('total_score.xlsx')
+df_total_score = xls_file_total_score.parse('Sheet1')
 # list of solvers
 Solvers = list(df_total_score.columns[1:])
 # List of mentors
-Mentors = list(df_total_score["Unnamed: 0"])
+Mentors = list(df_total_score["Org_y"])
 
 # Sort total score df to top 5 for initial selected solver -> Solvers[0]
 # sorted_df = df_total_score.sort_values(Solvers[0], ascending=False)
@@ -64,7 +68,7 @@ Mentors = list(df_total_score["Unnamed: 0"])
 
 # bar graph of total score for a specific solver
 total_fig = px.bar(df_total_score.sort_values(Solvers[0], ascending=False)[:5], x=Solvers[0], 
-y="Unnamed: 0", labels = {'Unnamed: 0':'MENTOR',Solvers[0]:'Total Score'})
+y="Org_y", labels = {'Org_y':'MENTOR',Solvers[0]:'Total Score'})
 total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
 # Format the bar graph
 total_fig.update_layout(
@@ -82,12 +86,12 @@ total_fig.update_layout(
 )
 
 # Getting first Solver Table from dropdown bar
-solver_needs_df = pd.read_csv("excel_to_csv/solver_team_data.csv")
+solver_needs_df = pd.read_csv("unused_files/excel_to_csv/solver_team_data.csv")
 selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns')
 selected_solver_row_info_list = list(solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns'))
 
 # Getting first Mentor Table - will be blank initially
-mentor_data_df = pd.read_csv("excel_to_csv/partner_data.csv")
+mentor_data_df = pd.read_csv("unused_files/excel_to_csv/partner_data.csv")
 selected_mentor_row_info = mentor_data_df[mentor_data_df['Org']==Mentors[0]].dropna(axis='columns')
 selected_mentor_row_info_list = list(mentor_data_df[mentor_data_df['Org']==Mentors[0]].dropna(axis='columns'))
 
@@ -224,10 +228,9 @@ app.layout = html.Div(children=[
         multiple=True
     ),
 
-    # Download total_score excel
-
+    # Download all excel files
     html.Div(children=[
-        html.A(html.Button('Download Excel Files'), href="/download_excel/",
+        html.A(html.Button('Download All Excel Files'), href="/download_all/",
         ),
     ],
     style={
@@ -313,23 +316,20 @@ app.layout = html.Div(children=[
 
 ])
 
-@app.server.route('/download_excel/')
-def download_excel():
-    # Export total score
-    # Create DF
-    xls_file = pd.ExcelFile('total_score_from_upload.xlsx')
-    total_score_df = xls_file.parse('Sheet1')
-    # Convert DF
-    strIO = io.BytesIO()
-    excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
-    total_score_df.to_excel(excel_writer, sheet_name="sheet1")
-    excel_writer.save()
-    excel_data = strIO.getvalue()
-    strIO.seek(0)
-
-    return send_file(strIO,
-                     attachment_filename='Total_Score_Excel.xlsx',
-                     as_attachment=True)
+# This method allows for you to download all of the generated excel files as a zip file
+# Files are challenge_match.xlsx, geo_match.xlsx, needs_match.xlsx, stage_match.xlsx,
+# total_score_from_upload.xlsx
+@app.server.route('/download_all/')
+def download_all():
+    zipf = zipfile.ZipFile('app/MIT_Solve_Excel_Files.zip','w', zipfile.ZIP_DEFLATED)
+    for root,dirs, files in os.walk('MIT_SOLVE_downloadable_excel_files/'):
+        for file in files:
+            zipf.write('MIT_SOLVE_downloadable_excel_files/'+file)
+    zipf.close()
+    return send_file('MIT_Solve_Excel_Files.zip',
+            mimetype = 'zip',
+            attachment_filename= 'MIT_Solve_Excel_Files.zip',
+            as_attachment = True)
 
 
 # This method will update the table displaying more information
@@ -340,7 +340,7 @@ def download_excel():
 def display_click_data(clickData):
     if clickData != None:
         mentor_name = clickData['points'][0]['label']
-        mentor_data_df = pd.read_csv("excel_to_csv/partner_data.csv")
+        mentor_data_df = pd.read_csv("uploaded_excel_to_csv/partner_data.csv")
         selected_mentor_row_info = mentor_data_df[mentor_data_df['Org']==mentor_name].dropna(axis='columns')
         generate_table(selected_mentor_row_info)  
         return selected_mentor_row_info.to_dict('records')
@@ -352,23 +352,32 @@ def display_click_data(clickData):
     dash.dependencies.Output('selected_solver_table', 'data'),
     [dash.dependencies.Input('Solver_dropdown', 'value')])
 def update_solver_table(value):
-    solver_needs_df = pd.read_csv("excel_to_csv/solver_team_data.csv")
-    selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
-    generate_table(selected_solver_row_info)  
-    return selected_solver_row_info.to_dict('records')
+    try:
+        solver_needs_df = pd.read_csv("uploaded_excel_to_csv/solver_team_data.csv")
+        selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
+        generate_table(selected_solver_row_info)  
+        return selected_solver_row_info.to_dict('records')
+    except:
+        solver_needs_df = pd.read_csv("unused_files/excel_to_csv/solver_team_data.csv")
+        selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
+        generate_table(selected_solver_row_info)  
+        return selected_solver_row_info.to_dict('records')
 
 
 # This method updates the graph when a new solver is selected from the dropdown
 @app.callback(
     dash.dependencies.Output('output_bargraph', 'figure'),
     [dash.dependencies.Input('Solver_dropdown', 'value')])
-def update_graph(value):
+def update_graph_from_solver_dropdown(value):
+    # create new df here of uploaded info
+    try:
+        xls_file_total_score = pd.ExcelFile('MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx')
+        uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
+    except:
+        uploaded_df_total_score = df_total_score
     # Sort and crop top 5 values for new selected solver
-    # new_sorted_df = df_total_score.sort_values(value, ascending=False)
-    # total_fig = px.bar(df_total_score[:5], x=value, y="Unnamed: 0",
-    # total_fig = px.bar(df_total_score, x=value, y="Unnamed: 0",
-    total_fig = px.bar(df_total_score.sort_values(value, ascending=False)[:5], x=value, 
-    y="Unnamed: 0", labels = {'Unnamed: 0':'MENTOR',value:'Total Score'})
+    total_fig = px.bar(uploaded_df_total_score.sort_values(value, ascending=False)[:5], x=value, 
+    y="Org_y", labels = {'Org_y':'MENTOR',value:'Total Score'})
     total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
     return total_fig
 
@@ -384,17 +393,15 @@ def update_graph(value):
     dash.dependencies.State('upload-data', 'last_modified')])
 def update_output(list_of_contents, list_of_names, list_of_dates):
     if list_of_contents is not None:
+        # list_of_uploaded_files is fully available here
+        new_total_score = create_total_score.create_total_score_excel()
+        new_total_score.insert(0, "Partners", Mentors, True)
         children = [
             # parse_contents prints out the files as tables
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
-        # list_of_uploaded_files is fully available here
-        #print(list_of_uploaded_files)
-        new_total_score = create_total_score.create_total_score_excel()
-        new_total_score.insert(0, "Partners", Mentors, True)
+        
         # Returns an html table of the df to be printed currently
-
-        # print(new_total_score)
         return html.Div([
             html.H5("Calculate Total Score Table"),
             dash_table.DataTable(
@@ -402,7 +409,26 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
                 columns=[{'name': item, 'id': item} for item in new_total_score.columns]
             ),
         ])
-        # return children
+
+
+# This callback will create a new bar chart with the data from the uploaded excel
+# files instead of the preloaded old excel files
+@app.callback(
+    dash.dependencies.Output('Solver_dropdown', 'value'),
+    [dash.dependencies.Input('upload-data', 'contents')],
+)
+def point_graph_to_uploaded_files(contents):
+
+    try:
+        # create new df from uploaded file
+        xls_file_total_score = pd.ExcelFile('MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx')
+        uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
+        # Create new graph with uploaded data instead of hardcoded
+        new_solvers = list(uploaded_df_total_score.columns[1:])
+        return new_solvers[8]
+    except:
+        return Solvers[0]
+    
 
 
 if __name__ == '__main__':
