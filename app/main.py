@@ -285,6 +285,22 @@ app.layout = html.Div(children=[
 
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
+   
+    # generate a checkbox for the mentor 
+    html.H4(children='Select the Mentor',style={'textAlign': 'center'}),
+    dcc.Checklist(
+    id= 'checkbox_mentor',
+    options=[  
+       {'label': 'AIR INK ', 'value': 'AIR'},
+       #{'label': selected_mentor_row_info.columns},
+       #columns=[{"name": i, "id": i} for i in selected_mentor_row_info.columns],
+     ],
+      style={
+        'textAlign': 'center',
+        },
+    value=[], 
+    
+),  
 
     # Generates table for the clicked on mentor
     html.H4(children='Clicked on Mentor Information',style={'textAlign': 'center'}),
@@ -344,6 +360,16 @@ def display_click_data(clickData):
         selected_mentor_row_info = mentor_data_df[mentor_data_df['Org']==mentor_name].dropna(axis='columns')
         generate_table(selected_mentor_row_info)  
         return selected_mentor_row_info.to_dict('records')
+
+
+# this method will update the name in front of the checkbox selected
+@app.callback(
+ dash.dependencies.Output('checkbox_mentor', 'value'),
+[dash.dependencies.Input('clicked_on_mentor_table', 'clickData')])
+
+def display_checkboxes(checkbox_mentor):
+    return[{"name": i, "id": i} for i in selected_mentor_row_info.columns]
+
 
 
 # This method updates the table displaying more information on a solver
