@@ -20,11 +20,17 @@ import csv
 import xlrd
 import sys
 
+# for writing to confirmed matches excel sheet
+from xlwt import Workbook
+from xlutils.copy import copy # not sure if needed
+import xlwings as xw
+
 # for app
 import os
 import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_auth
 import plotly.express as px
 import pandas as pd
 import dash
@@ -51,7 +57,16 @@ auth = dash_auth.BasicAuth(
     VALID_USERNAME_PASSWORD_PAIRS
 )
 
+# GLOBAL VARIABLE USED TO COUNT NUMBER OF MATCHES
+COUNT_OF_MATCHES = 0
 
+def get_count_of_matches():
+    global COUNT_OF_MATCHES
+    return COUNT_OF_MATCHES
+
+def increment_count_of_matches():
+    global COUNT_OF_MATCHES
+    COUNT_OF_MATCHES += 1
 
 # Creating the graph 
 xls_file_total_score = pd.ExcelFile('total_score.xlsx')
@@ -285,6 +300,27 @@ app.layout = html.Div(children=[
 
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
+   
+    # generate a checkbox for the mentor 
+    html.H3(children='Click Checkbox to Confirm Match between Selected Solver and Selected Mentor',
+        style={'textAlign': 'center'}
+    ),
+    dcc.RadioItems(
+        id='checkbox_confirm',
+        options=[  
+            {'label': 'Yes Match?', 'value': 'Confirm'},
+            {'label': 'No Match?', 'value': 'Denied'}
+        ],
+        style={
+            'textAlign': 'center',
+        },
+        value='Denied',
+        inputStyle={"margin-right": "20px"},
+        labelStyle={'display': 'inline-block'}
+    ),  
+
+    # THis is a breakline
+    html.P(children=html.Br(), style={'textAlign': 'center'}),
 
     # Generates table for the clicked on mentor
     html.H4(children='Clicked on Mentor Information',style={'textAlign': 'center'}),
@@ -314,6 +350,10 @@ app.layout = html.Div(children=[
     # printing df from uploaded file
     html.Div(id='output-data-upload'),
 
+    # hidden app layout which is target of callbacks that don't update anything
+    html.Div(id='hidden-div', 
+    )
+
 ])
 
 # This method allows for you to download all of the generated excel files as a zip file
@@ -336,7 +376,8 @@ def download_all():
 # on any mentor that is clicked on in the graph
 @app.callback(
     dash.dependencies.Output('clicked_on_mentor_table', 'data'),
-    [dash.dependencies.Input('output_bargraph', 'clickData')])
+    [dash.dependencies.Input('output_bargraph', 'clickData'),
+    ])
 def display_click_data(clickData):
     if clickData != None:
         mentor_name = clickData['points'][0]['label']
@@ -344,6 +385,113 @@ def display_click_data(clickData):
         selected_mentor_row_info = mentor_data_df[mentor_data_df['Org']==mentor_name].dropna(axis='columns')
         generate_table(selected_mentor_row_info)  
         return selected_mentor_row_info.to_dict('records')
+
+
+# Callback that either checks off or leaves blank the checkbox when a new solver is selected
+@app.callback(
+    dash.dependencies.Output('checkbox_confirm', 'value'),
+    [dash.dependencies.Input('Solver_dropdown', 'value')],
+    [dash.dependencies.State('output_bargraph', 'clickData')]
+)
+def check_or_uncheck_checkbox_solver(solver_name, clickData):
+    df = pd.read_excel('MIT_SOLVE_Confirmed_Matches.xlsx') #, sheetname='MIT_SOLVE_Confirmed_Matches'
+    mentors_list = df['MENTOR'].tolist()
+    solvers_list = df['SOLVER'].tolist()
+
+    if clickData == None:
+            return 'You need to select a mentor'
+
+    for i in range(len(solvers_list)):
+        if solvers_list[i] == solver_name:
+            if mentors_list[i] == clickData['points'][0]['label']:
+                # This is already a match 
+                print("This is a match already, set checkbox to 'Confirm'")
+                return 'Confirm'
+    # This is not a match yet
+    return 'Denied'
+
+
+# Callback that either checks off or leaves blank the checkbox when a new mentor is selected
+@app.callback(
+    dash.dependencies.Output('checkbox_confirm', 'value'),
+    [dash.dependencies.Input('output_bargraph', 'clickData')],
+    [dash.dependencies.State('Solver_dropdown', 'value')]
+)
+def check_or_uncheck_checkbox_solver(clickData, solver_name):
+    df = pd.read_excel('MIT_SOLVE_Confirmed_Matches.xlsx') #, sheetname='MIT_SOLVE_Confirmed_Matches'
+    mentors_list = df['MENTOR'].tolist()
+    solvers_list = df['SOLVER'].tolist()
+
+    if clickData == None:
+            return 'You need to select a mentor'
+
+    for i in range(len(solvers_list)):
+        if solvers_list[i] == solver_name:
+            if mentors_list[i] == clickData['points'][0]['label']:
+                # This is already a match 
+                print("This is a match already, set checkbox to 'Confirm'")
+                return 'Confirm'
+    # This is not a match yet
+    return 'Denied'
+
+
+# Callback that adds in matches to a spreadsheet
+@app.callback(
+    dash.dependencies.Output('hidden-div', 'children'),
+    [dash.dependencies.Input('checkbox_confirm', 'value')],
+    [dash.dependencies.State('Solver_dropdown', 'value'),
+    dash.dependencies.State('output_bargraph', 'clickData')]
+    )
+def add_confirmed_match(checkbox, solver_name, clickData):
+    if checkbox == 'Confirm':
+        if clickData == None:
+            return 'You need to select a mentor'
+        else:
+
+            df = pd.read_excel('MIT_SOLVE_Confirmed_Matches.xlsx') #, sheetname='MIT_SOLVE_Confirmed_Matches'
+            mentors_list = df['MENTOR'].tolist()
+            solvers_list = df['SOLVER'].tolist()
+
+            # checks if already a match
+            for i in range(len(solvers_list)):
+                if solvers_list[i] == solver_name:
+                    if mentors_list[i] == clickData['points'][0]['label']:
+                        # This is already a match 
+                        print("This is a match already, set checkbox to 'Confirm'")
+                        return None
+
+            # if we get here this is not a match
+            # write match to excel sheet
+            wb = xw.Book('MIT_SOLVE_Confirmed_Matches.xlsx')
+            sht1 = wb.sheets['MIT_SOLVE_Confirmed_Matches']
+
+            matches_count = get_count_of_matches()
+
+            # write in mentor
+            sht1.range('A' + str(len(solvers_list) + 2)).value = str(clickData['points'][0]['label'])
+            # write in solver
+            sht1.range('B' + str(len(solvers_list) + 2)).value = str(solver_name)
+            # increment count_of_matches
+            increment_count_of_matches()
+            return 'Hello there this worked'
+    # for when we delete matches (code below)
+    if checkbox == 'Denied':
+        if clickData == None:
+            return 'No mentor selected'
+        else:
+            # this will be where we delete a match
+            wb = xw.Book('MIT_SOLVE_Confirmed_Matches.xlsx')
+            sht1 = wb.sheets['MIT_SOLVE_Confirmed_Matches']
+
+            #figure out where pairing is and delete row
+
+            matches_count = get_count_of_matches()
+            # # decrement count_of_matches
+            # matches_count += 1
+    
+    return None
+
+
 
 
 # This method updates the table displaying more information on a solver
