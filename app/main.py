@@ -390,13 +390,16 @@ def display_click_data(clickData):
 # Callback that either checks off or leaves blank the checkbox when a new solver is selected
 @app.callback(
     dash.dependencies.Output('checkbox_confirm', 'value'),
-    [dash.dependencies.Input('Solver_dropdown', 'value')],
-    [dash.dependencies.State('output_bargraph', 'clickData')]
+    [dash.dependencies.Input('Solver_dropdown', 'value'),
+    dash.dependencies.Input('output_bargraph', 'clickData')]
 )
-def check_or_uncheck_checkbox_solver(solver_name, clickData):
+def check_or_uncheck_checkbox(solver_name, clickData):
     df = pd.read_excel('MIT_SOLVE_Confirmed_Matches.xlsx') #, sheetname='MIT_SOLVE_Confirmed_Matches'
     mentors_list = df['MENTOR'].tolist()
     solvers_list = df['SOLVER'].tolist()
+
+    print(mentors_list)
+    print(solvers_list)
 
     if clickData == None:
             return 'You need to select a mentor'
@@ -408,31 +411,32 @@ def check_or_uncheck_checkbox_solver(solver_name, clickData):
                 print("This is a match already, set checkbox to 'Confirm'")
                 return 'Confirm'
     # This is not a match yet
+    print("this is not a match yet")
     return 'Denied'
 
 
-# Callback that either checks off or leaves blank the checkbox when a new mentor is selected
-@app.callback(
-    dash.dependencies.Output('checkbox_confirm', 'value'),
-    [dash.dependencies.Input('output_bargraph', 'clickData')],
-    [dash.dependencies.State('Solver_dropdown', 'value')]
-)
-def check_or_uncheck_checkbox_solver(clickData, solver_name):
-    df = pd.read_excel('MIT_SOLVE_Confirmed_Matches.xlsx') #, sheetname='MIT_SOLVE_Confirmed_Matches'
-    mentors_list = df['MENTOR'].tolist()
-    solvers_list = df['SOLVER'].tolist()
+# # Callback that either checks off or leaves blank the checkbox when a new mentor is selected
+# @app.callback(
+#     dash.dependencies.Output('checkbox_confirm', 'value'),
+#     [dash.dependencies.Input('output_bargraph', 'clickData')],
+#     [dash.dependencies.State('Solver_dropdown', 'value')]
+# )
+# def check_or_uncheck_checkbox_mentor(clickData, solver_name):
+#     df = pd.read_excel('MIT_SOLVE_Confirmed_Matches.xlsx') #, sheetname='MIT_SOLVE_Confirmed_Matches'
+#     mentors_list = df['MENTOR'].tolist()
+#     solvers_list = df['SOLVER'].tolist()
 
-    if clickData == None:
-            return 'You need to select a mentor'
+#     if clickData == None:
+#             return 'You need to select a mentor'
 
-    for i in range(len(solvers_list)):
-        if solvers_list[i] == solver_name:
-            if mentors_list[i] == clickData['points'][0]['label']:
-                # This is already a match 
-                print("This is a match already, set checkbox to 'Confirm'")
-                return 'Confirm'
-    # This is not a match yet
-    return 'Denied'
+#     for i in range(len(solvers_list)):
+#         if solvers_list[i] == solver_name:
+#             if mentors_list[i] == clickData['points'][0]['label']:
+#                 # This is already a match 
+#                 print("This is a match already, set checkbox to 'Confirm'")
+#                 return 'Confirm'
+#     # This is not a match yet
+#     return 'Denied'
 
 
 # Callback that adds in matches to a spreadsheet
