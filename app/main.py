@@ -57,8 +57,11 @@ auth = dash_auth.BasicAuth(
     VALID_USERNAME_PASSWORD_PAIRS
 )
 
+
+df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
+mentors_list = df['MENTOR'].tolist()
 # GLOBAL VARIABLE USED TO COUNT NUMBER OF MATCHES
-COUNT_OF_MATCHES = 0
+COUNT_OF_MATCHES = len(mentors_list)
 
 def get_count_of_matches():
     global COUNT_OF_MATCHES
@@ -272,11 +275,11 @@ app.layout = html.Div(children=[
     ),
 
     # Comment box
-    # dcc.Textarea(
-    #     id='textarea-for-comments',
-    #     value='Textarea for comments',
-    #     style={'width': '50%', 'height': 200, 'Align-items': 'center'},
-    # ),
+    dcc.Textarea(
+        id='textarea-for-comments',
+        value='Textarea for comments',
+        style={'width': '50%', 'height': 200, 'Align-items': 'center'},
+    ),
 
     # Generates the table for the selected solver from the dropdown
     html.H4(children='Selected Solver Information',style={'textAlign': 'center'}),
@@ -365,6 +368,7 @@ def download_all():
     for root,dirs, files in os.walk('MIT_SOLVE_downloadable_excel_files/'):
         for file in files:
             zipf.write('MIT_SOLVE_downloadable_excel_files/'+file)
+    zipf.write('mit_solve_confirmed_matches.xlsx')
     zipf.close()
     return send_file('MIT_Solve_Excel_Files.zip',
             mimetype = 'zip',
@@ -394,10 +398,11 @@ def display_click_data(clickData):
     dash.dependencies.Input('output_bargraph', 'clickData')]
 )
 def check_or_uncheck_checkbox(solver_name, clickData):
-    df = pd.read_excel('MIT_SOLVE_Confirmed_Matches.xlsx') #, sheetname='MIT_SOLVE_Confirmed_Matches'
+    df = pd.read_excel('mit_solve_confirmed_matches.xlsx')
     mentors_list = df['MENTOR'].tolist()
     solvers_list = df['SOLVER'].tolist()
 
+    print(df)
     print(mentors_list)
     print(solvers_list)
 
@@ -439,7 +444,7 @@ def check_or_uncheck_checkbox(solver_name, clickData):
 #     return 'Denied'
 
 
-# Callback that adds in matches to a spreadsheet
+# Callback that adds and deletes in matches to a spreadsheet
 @app.callback(
     dash.dependencies.Output('hidden-div', 'children'),
     [dash.dependencies.Input('checkbox_confirm', 'value')],
@@ -451,8 +456,7 @@ def add_confirmed_match(checkbox, solver_name, clickData):
         if clickData == None:
             return 'You need to select a mentor'
         else:
-
-            df = pd.read_excel('MIT_SOLVE_Confirmed_Matches.xlsx') #, sheetname='MIT_SOLVE_Confirmed_Matches'
+            df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
             mentors_list = df['MENTOR'].tolist()
             solvers_list = df['SOLVER'].tolist()
 
@@ -466,34 +470,42 @@ def add_confirmed_match(checkbox, solver_name, clickData):
 
             # if we get here this is not a match
             # write match to excel sheet
-            wb = xw.Book('MIT_SOLVE_Confirmed_Matches.xlsx')
+            wb = xw.Book('mit_solve_confirmed_matches.xlsx')
             sht1 = wb.sheets['MIT_SOLVE_Confirmed_Matches']
 
             matches_count = get_count_of_matches()
 
             # write in mentor
-            sht1.range('A' + str(len(solvers_list) + 2)).value = str(clickData['points'][0]['label'])
+            sht1.range('A' + str(COUNT_OF_MATCHES + 2)).value = str(clickData['points'][0]['label'])
             # write in solver
-            sht1.range('B' + str(len(solvers_list) + 2)).value = str(solver_name)
+            sht1.range('B' + str(COUNT_OF_MATCHES + 2)).value = str(solver_name)
             # increment count_of_matches
             increment_count_of_matches()
             return 'Hello there this worked'
-    # for when we delete matches (code below)
+    # when checkbox changes from confirm to denied
     if checkbox == 'Denied':
         if clickData == None:
             return 'No mentor selected'
         else:
-            # this will be where we delete a match
-            wb = xw.Book('MIT_SOLVE_Confirmed_Matches.xlsx')
-            sht1 = wb.sheets['MIT_SOLVE_Confirmed_Matches']
+            df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
+            mentors_list = df['MENTOR'].tolist()
+            solvers_list = df['SOLVER'].tolist()
 
-            #figure out where pairing is and delete row
+            # checks if already a match
+            for i in range(len(solvers_list)):
+                if solvers_list[i] == solver_name:
+                    if mentors_list[i] == clickData['points'][0]['label']:
+                        # This match needs to be deleted 
+                        print("This is match should be deleted and box sould be 'Denied'")
+                        
+                        # this will be where we delete a match
+                        wb = xw.Book('mit_solve_confirmed_matches.xlsx')
+                        sht1 = wb.sheets['MIT_SOLVE_Confirmed_Matches']  
 
-            matches_count = get_count_of_matches()
-            # # decrement count_of_matches
-            # matches_count += 1
-    
-    return None
+                        # write in mentor
+                        sht1.range('A' + str(i + 2)).value = str('')
+                        # write in solver
+                        sht1.range('B' + str(i + 2)).value = str('')
 
 
 
