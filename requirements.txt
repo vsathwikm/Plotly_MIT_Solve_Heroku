@@ -11,7 +11,7 @@ dash_table==4.9.0
 xlrd==1.2.0
 numpy==1.19.1
 dash_table_experiments==0.6.0
-
+gunicorn==20.0.4
 
 
 # dash_html_components==1.0.3
