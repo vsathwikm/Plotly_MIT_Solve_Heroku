@@ -171,7 +171,7 @@ def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "uploaded_excel_to_c
     workbook = xlrd.open_workbook(excel_file)
 
     for sheet_name in workbook.sheet_names():
-        print('processing - ' + sheet_name)
+     #   print('processing - ' + sheet_name)
         worksheet = workbook.sheet_by_name(sheet_name)
         csv_file_full_path = full_path + sheet_name.lower().replace(" - ", "_").replace(" ","_") + '.csv'
         csvfile = open(csv_file_full_path, 'w',encoding='utf-8')
@@ -183,7 +183,7 @@ def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "uploaded_excel_to_c
                 )
             
         csvfile.close()
-        print( "{} has been saved at {}".format(sheet_name, csv_file_full_path))
+     #( "{} has been saved at {}".format(sheet_name, csv_file_full_path))
 
 
 # Method used to parse files from upload button
@@ -352,17 +352,57 @@ app.layout = html.Div(children=[
     html.H4(children='Green = 0-1 matches, Blue = 2-3 matches, Red = 4 or more matches',style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
+    # html.P(children=html.Br(), style={'textAlign': 'center'}),
+    # html.P(children=html.Br(), style={'textAlign': 'center'}),
 
     # printing df from uploaded file
     html.Div(id='output-data-upload'),
+
+    # printing df from uploaded file
+    html.Div(id='mentor-matches-list',
+    children=[]),
 
     # hidden app layout which is target of callbacks that don't update anything
     html.Div(id='hidden-div', 
     )
 
 ])
+
+
+# Callback that list current matches for a given mentor
+@app.callback(
+    dash.dependencies.Output('mentor-matches-list', 'children'),
+    [dash.dependencies.Input('checkbox_confirm', 'value')],
+    [dash.dependencies.State('output_bargraph', 'clickData'),
+    dash.dependencies.State('Solver_dropdown', 'value')],
+)
+def list_matches_for_a_mentor(value, clickData, solver_name):
+    df = pd.read_excel('mit_solve_confirmed_matches.xlsx')
+    mentors_list = df['MENTOR'].tolist()
+    solvers_list = df['SOLVER'].tolist()
+
+    if clickData == None:
+        return 'You need to select a mentor'
+
+    matches_list = []
+
+    for i in range(len(solvers_list)):
+        if mentors_list[i] == str(clickData['points'][0]['label']):
+            matches_list.append(solvers_list[i])
+
+    if value == 'Confirm':
+        if solver_name not in matches_list:
+            matches_list.append(solver_name)
+
+    if value == 'Denied':
+        if solver_name in matches_list:
+            matches_list.remove(solver_name)
+
+    if matches_list == []:
+        return 'no current matches for this mentor'
+    else:
+
+        return "List of current matches for " + str(clickData['points'][0]['label']) + ": \n" + str(matches_list)
 
 # This method allows for you to download all of the generated excel files as a zip file
 # Files are challenge_match.xlsx, geo_match.xlsx, needs_match.xlsx, stage_match.xlsx,
@@ -403,7 +443,7 @@ def display_click_data(clickData):
         for i in range(len(mentors_list)):
             if mentors_list[i] == mentor_name:
                 mentor_matches_count += 1
-                print('found a match')
+               # print('found a match')
 
         if mentor_matches_count <= 1:
             color_code = 'green'
@@ -444,9 +484,9 @@ def check_or_uncheck_checkbox(solver_name, clickData):
     mentors_list = df['MENTOR'].tolist()
     solvers_list = df['SOLVER'].tolist()
 
-    print(df)
-    print(mentors_list)
-    print(solvers_list)
+    # print(df)
+    # print(mentors_list)
+    # print(solvers_list)
 
     if clickData == None:
             return 'You need to select a mentor'
@@ -455,10 +495,10 @@ def check_or_uncheck_checkbox(solver_name, clickData):
         if solvers_list[i] == solver_name:
             if mentors_list[i] == clickData['points'][0]['label']:
                 # This is already a match 
-                print("This is a match already, set checkbox to 'Confirm'")
+ #               print("This is a match already, set checkbox to 'Confirm'")
                 return 'Confirm'
     # This is not a match yet
-    print("this is not a match yet")
+ #   print("this is not a match yet")
     return 'Denied'
 
 
@@ -507,7 +547,7 @@ def add_confirmed_match(checkbox, solver_name, clickData):
                 if solvers_list[i] == solver_name:
                     if mentors_list[i] == clickData['points'][0]['label']:
                         # This is already a match 
-                        print("This is a match already, set checkbox to 'Confirm'")
+                      #  print("This is a match already, set checkbox to 'Confirm'")
                         return None
 
             # if we get here this is not a match
@@ -524,7 +564,7 @@ def add_confirmed_match(checkbox, solver_name, clickData):
             wb.save('mit_solve_confirmed_matches.xlsx')
             # increment count_of_matches
             increment_count_of_matches()
-            return 'Hello there this worked'
+            return ''
     # when checkbox changes from confirm to denied
     if checkbox == 'Denied':
         if clickData == None:
@@ -539,7 +579,7 @@ def add_confirmed_match(checkbox, solver_name, clickData):
                 if solvers_list[i] == solver_name:
                     if mentors_list[i] == clickData['points'][0]['label']:
                         # This match needs to be deleted 
-                        print("This is match should be deleted and box sould be 'Denied'")
+                       # print("This is match should be deleted and box sould be 'Denied'")
                         
                         # this will be where we delete a match
                         wb = xw.Book('mit_solve_confirmed_matches.xlsx')
@@ -611,13 +651,14 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         new_total_score = create_total_score.create_total_score_excel()
         new_total_score.insert(0, "Partners", Mentors, True)
         # Returns an html table of the df to be printed currently
-        return html.Div([
-            html.H5("Calculate Total Score Table"),
-            dash_table.DataTable(
-                data=new_total_score.to_dict('records'),
-                columns=[{'name': item, 'id': item} for item in new_total_score.columns]
-            ),
-        ])
+        # return html.Div([
+        #     html.H5("Calculate Total Score Table"),
+        #     dash_table.DataTable(
+        #         data=new_total_score.to_dict('records'),
+        #         columns=[{'name': item, 'id': item} for item in new_total_score.columns]
+        #     ),
+        # ])
+        return None
 
 
 # This callback will create a new bar chart with the data from the uploaded excel
@@ -634,7 +675,7 @@ def point_graph_to_uploaded_files(contents):
         uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
         # Create new graph with uploaded data instead of hardcoded
         new_solvers = list(uploaded_df_total_score.columns[1:])
-        return new_solvers[8]
+        return new_solvers[0]
     except:
         return Solvers[0]
     
