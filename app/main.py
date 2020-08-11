@@ -134,6 +134,10 @@ for solver in Solvers:
 # Method that generates tables
 # Used to for the selected_solver_table and clicked_on_mentor_table
 def generate_table(dataframe, max_rows=10):
+    # go through excel sheet and find how many matches a mentor currently has
+    # do if statements to determine a color
+    
+    color_code = 'green'
     return html.Table([
         html.Thead(
             html.Tr([html.Th(col) for col in dataframe.columns])
@@ -143,7 +147,9 @@ def generate_table(dataframe, max_rows=10):
                 html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
             ]) for i in range(min(len(dataframe), max_rows))
         ])
-    ])
+        
+    ], 
+    )
 
 
 # This allows the input excel file to be turned into csv files which will be used
@@ -337,14 +343,13 @@ app.layout = html.Div(children=[
         'textAlign': 'center',
         'font_family': 'helvetica',
         'font_size': '20px',
-        
         },
         style_header={
         'backgroundColor': 'rgb(30, 30, 30)',
         'color': 'white',
         },
     ),
-
+    html.H4(children='Green = 0-1 matches, Blue = 2-3 matches, Red = 4 or more matches',style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
@@ -379,7 +384,8 @@ def download_all():
 # This method will update the table displaying more information
 # on any mentor that is clicked on in the graph
 @app.callback(
-    dash.dependencies.Output('clicked_on_mentor_table', 'data'),
+    [dash.dependencies.Output('clicked_on_mentor_table', 'data'),
+    dash.dependencies.Output('clicked_on_mentor_table', 'style_cell')],
     [dash.dependencies.Input('output_bargraph', 'clickData'),
     ])
 def display_click_data(clickData):
@@ -387,8 +393,44 @@ def display_click_data(clickData):
         mentor_name = clickData['points'][0]['label']
         mentor_data_df = pd.read_csv("uploaded_excel_to_csv/partner_data.csv")
         selected_mentor_row_info = mentor_data_df[mentor_data_df['Org']==mentor_name].dropna(axis='columns')
-        generate_table(selected_mentor_row_info)  
-        return selected_mentor_row_info.to_dict('records')
+        generate_table(selected_mentor_row_info)
+
+        # pick color for color_code based on number of matches
+        df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
+        mentors_list = df['MENTOR'].tolist()
+
+        mentor_matches_count = 0
+        for i in range(len(mentors_list)):
+            if mentors_list[i] == mentor_name:
+                mentor_matches_count += 1
+                print('found a match')
+
+        if mentor_matches_count <= 1:
+            color_code = 'green'
+        elif mentor_matches_count == 2 or mentor_matches_count == 3:
+            color_code = 'blue'
+        else:
+            color_code = 'red'
+
+
+
+        new_style = {
+            'whiteSpace': 'normal',
+            'height': 'auto',
+            'textAlign': 'center',
+            'font_family': 'helvetica',
+            'font_size': '20px',
+            'color' : color_code
+        }
+
+        return [selected_mentor_row_info.to_dict('records'), new_style]
+    return [None, {
+        'whiteSpace': 'normal',
+        'height': 'auto',
+        'textAlign': 'center',
+        'font_family': 'helvetica',
+        'font_size': '20px',
+        }]
 
 
 # Callback that either checks off or leaves blank the checkbox when a new solver is selected
@@ -479,6 +521,7 @@ def add_confirmed_match(checkbox, solver_name, clickData):
             sht1.range('A' + str(COUNT_OF_MATCHES + 2)).value = str(clickData['points'][0]['label'])
             # write in solver
             sht1.range('B' + str(COUNT_OF_MATCHES + 2)).value = str(solver_name)
+            wb.save('mit_solve_confirmed_matches.xlsx')
             # increment count_of_matches
             increment_count_of_matches()
             return 'Hello there this worked'
@@ -506,6 +549,8 @@ def add_confirmed_match(checkbox, solver_name, clickData):
                         sht1.range('A' + str(i + 2)).value = str('')
                         # write in solver
                         sht1.range('B' + str(i + 2)).value = str('')
+
+                        wb.save('mit_solve_confirmed_matches.xlsx')
 
 
 
