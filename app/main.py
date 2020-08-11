@@ -23,7 +23,6 @@ import sys
 # for writing to confirmed matches excel sheet
 from xlwt import Workbook
 from xlutils.copy import copy # not sure if needed
-import xlwings as xw
 
 # for app
 import os

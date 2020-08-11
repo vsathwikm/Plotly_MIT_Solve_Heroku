@@ -1,4 +1,3 @@
-INSTALL_ON_LINUX=1; xlwings==0.20.1
 xlutils==2.0.0
 xlwt==1.3.0
 pandas==1.1.0
