@@ -387,6 +387,6 @@ def pivot_table_stage(st_solver, st_partners, export=False):
     return stage_pivot, stage_pivot_copy
 
 
-if __name__ == "__main__":
-    print(get_regions_dict())
+# if __name__ == "__main__":
+    #print(get_regions_dict())
 
