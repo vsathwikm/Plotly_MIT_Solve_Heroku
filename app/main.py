@@ -35,6 +35,11 @@ import plotly.express as px
 import pandas as pd
 import dash
 
+
+# trying to fix for heroku
+import openpyxl
+
+
 # for adding basic Auth 
 VALID_USERNAME_PASSWORD_PAIRS = {
     'mit': 'solve'
@@ -550,20 +555,33 @@ def add_confirmed_match(checkbox, solver_name, clickData):
                       #  print("This is a match already, set checkbox to 'Confirm'")
                         return None
 
-            # if we get here this is not a match
-            # write match to excel sheet
-            wb = xw.Book('mit_solve_confirmed_matches.xlsx')
-            sht1 = wb.sheets['MIT_SOLVE_Confirmed_Matches']
+            # this is the version that works on local host !!!!!!!!!!!!
+            # # if we get here this is not a match
+            # # write match to excel sheet
+            # wb = xw.Book('mit_solve_confirmed_matches.xlsx')
+            # sht1 = wb.sheets['MIT_SOLVE_Confirmed_Matches']
 
-            matches_count = get_count_of_matches()
+            # matches_count = get_count_of_matches()
 
-            # write in mentor
-            sht1.range('A' + str(COUNT_OF_MATCHES + 2)).value = str(clickData['points'][0]['label'])
-            # write in solver
-            sht1.range('B' + str(COUNT_OF_MATCHES + 2)).value = str(solver_name)
-            wb.save('mit_solve_confirmed_matches.xlsx')
-            # increment count_of_matches
-            increment_count_of_matches()
+            # # write in mentor
+            # sht1.range('A' + str(COUNT_OF_MATCHES + 2)).value = str(clickData['points'][0]['label'])
+            # # write in solver
+            # sht1.range('B' + str(COUNT_OF_MATCHES + 2)).value = str(solver_name)
+            # wb.save('mit_solve_confirmed_matches.xlsx')
+            # # increment count_of_matches
+            # increment_count_of_matches()
+
+            file = 'mit_solve_confirmed_matches.xlsx'
+            wb = openpyxl.load_workbook(filename=file)
+            # Select the right sheet
+            ws = wb.get_sheet_by_name('Sheet1')
+            # insert the mentor and solver name
+
+            ws['A' + str(COUNT_OF_MATCHES + 2)] = str(clickData['points'][0]['label'])
+            ws['B' + str(COUNT_OF_MATCHES + 2)] = str(solver_name)
+            # Save the workbook
+            wb.save(file)
+
             return ''
     # when checkbox changes from confirm to denied
     if checkbox == 'Denied':
@@ -581,16 +599,28 @@ def add_confirmed_match(checkbox, solver_name, clickData):
                         # This match needs to be deleted 
                        # print("This is match should be deleted and box sould be 'Denied'")
                         
-                        # this will be where we delete a match
-                        wb = xw.Book('mit_solve_confirmed_matches.xlsx')
-                        sht1 = wb.sheets['MIT_SOLVE_Confirmed_Matches']  
+                        # This is version that works
+                        # # this will be where we delete a match
+                        # wb = xw.Book('mit_solve_confirmed_matches.xlsx')
+                        # sht1 = wb.sheets['MIT_SOLVE_Confirmed_Matches']  
 
-                        # write in mentor
-                        sht1.range('A' + str(i + 2)).value = str('')
-                        # write in solver
-                        sht1.range('B' + str(i + 2)).value = str('')
+                        # # write in mentor
+                        # sht1.range('A' + str(i + 2)).value = str('')
+                        # # write in solver
+                        # sht1.range('B' + str(i + 2)).value = str('')
 
-                        wb.save('mit_solve_confirmed_matches.xlsx')
+                        # wb.save('mit_solve_confirmed_matches.xlsx')
+
+                        file = 'mit_solve_confirmed_matches.xlsx'
+                        wb = openpyxl.load_workbook(filename=file)
+                        # Select the right sheet
+                        ws = wb.get_sheet_by_name('Sheet1')
+                        # insert the mentor and solver name
+
+                        ws['A' + str(i + 2)] = str('')
+                        ws['B' + str(i + 2)] = str('')
+                        # Save the workbook
+                        wb.save(file)
 
 
 
