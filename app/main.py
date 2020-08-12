@@ -23,7 +23,7 @@ import sys
 # for writing to confirmed matches excel sheet
 from xlwt import Workbook
 from xlutils.copy import copy # not sure if needed
-# import xlwings as xw
+import xlwings as xw
 
 # for app
 import os
@@ -63,7 +63,7 @@ auth = dash_auth.BasicAuth(
 )
 
 
-df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
+df = pd.read_excel('./mit_solve_confirmed_matches.xlsx') 
 mentors_list = df['MENTOR'].tolist()
 # GLOBAL VARIABLE USED TO COUNT NUMBER OF MATCHES
 COUNT_OF_MATCHES = len(mentors_list)
@@ -705,7 +705,7 @@ def point_graph_to_uploaded_files(contents):
         uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
         # Create new graph with uploaded data instead of hardcoded
         new_solvers = list(uploaded_df_total_score.columns[1:])
-        return new_solvers[0]
+        return new_solvers[8]
     except:
         return Solvers[0]
     
