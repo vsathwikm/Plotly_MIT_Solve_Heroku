@@ -3,8 +3,11 @@ import base64
 import datetime
 import io
 
+# for matches sheet
+import datetime
+
 # for creating the new total_score.xlsx
-import create_total_score
+from create_total_score import create_total_score_excel
 
 # for auth
 import dash_auth
@@ -248,7 +251,7 @@ app.layout = html.Div(children=[
     # Upload files
     dcc.Upload(
         id='upload-data',
-        children=html.Button('Upload Excel File'),
+        children=html.Button('Upload Excel Data File'),
         style={
             'height': '60px',
             'textAlign': 'center',
@@ -285,12 +288,7 @@ app.layout = html.Div(children=[
         figure= total_fig
     ),
 
-    # Comment box
-    dcc.Textarea(
-        id='textarea-for-comments',
-        value='Textarea for comments',
-        style={'width': '50%', 'height': 200, 'Align-items': 'center'},
-    ),
+   
 
     # Generates the table for the selected solver from the dropdown
     html.H4(children='Selected Solver Information',style={'textAlign': 'center'}),
@@ -367,9 +365,18 @@ app.layout = html.Div(children=[
     html.Div(id='mentor-matches-list',
     children=[]),
 
+    html.P(children=html.Br(), style={'textAlign': 'center'}),
+
     # hidden app layout which is target of callbacks that don't update anything
     html.Div(id='hidden-div', 
-    )
+    ),
+
+     # Comment box
+    dcc.Textarea(
+        id='textarea-for-comments',
+        value='Text area for comments',
+        style={'width': '50%', 'height': 200, 'Align-items': 'center'},
+    ),
 
 ])
 
@@ -432,8 +439,9 @@ def download_all():
     [dash.dependencies.Output('clicked_on_mentor_table', 'data'),
     dash.dependencies.Output('clicked_on_mentor_table', 'style_cell')],
     [dash.dependencies.Input('output_bargraph', 'clickData'),
+    dash.dependencies.Input('checkbox_confirm', 'value'),
     ])
-def display_click_data(clickData):
+def display_click_data(clickData, value):
     if clickData != None:
         mentor_name = clickData['points'][0]['label']
         mentor_data_df = pd.read_csv("uploaded_excel_to_csv/partner_data.csv")
@@ -449,6 +457,12 @@ def display_click_data(clickData):
             if mentors_list[i] == mentor_name:
                 mentor_matches_count += 1
                # print('found a match')
+
+        if value == 'Confirm':
+            mentor_matches_count += 1
+
+        if value == 'Denied':
+            mentor_matches_count -= 1
 
         if mentor_matches_count <= 1:
             color_code = 'green'
@@ -507,28 +521,7 @@ def check_or_uncheck_checkbox(solver_name, clickData):
     return 'Denied'
 
 
-# # Callback that either checks off or leaves blank the checkbox when a new mentor is selected
-# @app.callback(
-#     dash.dependencies.Output('checkbox_confirm', 'value'),
-#     [dash.dependencies.Input('output_bargraph', 'clickData')],
-#     [dash.dependencies.State('Solver_dropdown', 'value')]
-# )
-# def check_or_uncheck_checkbox_mentor(clickData, solver_name):
-#     df = pd.read_excel('MIT_SOLVE_Confirmed_Matches.xlsx') #, sheetname='MIT_SOLVE_Confirmed_Matches'
-#     mentors_list = df['MENTOR'].tolist()
-#     solvers_list = df['SOLVER'].tolist()
 
-#     if clickData == None:
-#             return 'You need to select a mentor'
-
-#     for i in range(len(solvers_list)):
-#         if solvers_list[i] == solver_name:
-#             if mentors_list[i] == clickData['points'][0]['label']:
-#                 # This is already a match 
-#                 print("This is a match already, set checkbox to 'Confirm'")
-#                 return 'Confirm'
-#     # This is not a match yet
-#     return 'Denied'
 
 
 # Callback that adds and deletes in matches to a spreadsheet
@@ -575,12 +568,23 @@ def add_confirmed_match(checkbox, solver_name, clickData):
             wb = openpyxl.load_workbook(filename=file)
             # Select the right sheet
             ws = wb.get_sheet_by_name('Sheet1')
-            # insert the mentor and solver name
 
+            # count number of matches
+            matches_count_for_mentor = 1
+            for i in range(len(mentors_list)):
+                if mentors_list[i] == clickData['points'][0]['label']:
+                    matches_count_for_mentor += 1
+                    
+
+            # insert the mentor and solver name
+            time_right_now = datetime.datetime.now()
             ws['A' + str(COUNT_OF_MATCHES + 2)] = str(clickData['points'][0]['label'])
             ws['B' + str(COUNT_OF_MATCHES + 2)] = str(solver_name)
+            ws['C' + str(COUNT_OF_MATCHES + 2)] = str(time_right_now)
+            ws['D' + str(COUNT_OF_MATCHES + 2)] = str(matches_count_for_mentor)
             # Save the workbook
             wb.save(file)
+            increment_count_of_matches()
 
             return ''
     # when checkbox changes from confirm to denied
@@ -619,6 +623,8 @@ def add_confirmed_match(checkbox, solver_name, clickData):
 
                         ws['A' + str(i + 2)] = str('')
                         ws['B' + str(i + 2)] = str('')
+                        ws['C' + str(i + 2)] = str('')
+                        ws['D' + str(i + 2)] = str('')
                         # Save the workbook
                         wb.save(file)
 
@@ -678,7 +684,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
         # these two lines below are what could potentially cause zip file errors
-        new_total_score = create_total_score.create_total_score_excel()
+        new_total_score = create_total_score_excel()
         new_total_score.insert(0, "Partners", Mentors, True)
         # Returns an html table of the df to be printed currently
         # return html.Div([
