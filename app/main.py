@@ -3,9 +3,6 @@ import base64
 import datetime
 import io
 
-# for matches sheet
-import datetime
-
 # for creating the new total_score.xlsx
 from create_total_score import create_total_score_excel
 
@@ -26,26 +23,23 @@ import sys
 # for writing to confirmed matches excel sheet
 from xlwt import Workbook
 from xlutils.copy import copy # not sure if needed
-import xlwings as xw
 
 # for app
 import os
 import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_auth
 import plotly.express as px
 import pandas as pd
 import dash
 
-
-# trying to fix for heroku
+# writing to excel files
 import openpyxl
 
 
 # for adding basic Auth 
 VALID_USERNAME_PASSWORD_PAIRS = {
-    'mit': 'solve'
+    'mit': 'solve2020'
 }
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -56,43 +50,44 @@ styles = {
     }
 }
 
+# the Flask app
 app = Flask(__name__) 
-
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-server = app.server # the Flask app
+server = app.server 
 auth = dash_auth.BasicAuth(
     app,
     VALID_USERNAME_PASSWORD_PAIRS
 )
 
-
-df = pd.read_excel('./mit_solve_confirmed_matches.xlsx') 
+# Determines how many matches have been created so writing to the excel
+# file with new matches is a smooth process
+df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
 mentors_list = df['MENTOR'].tolist()
 # GLOBAL VARIABLE USED TO COUNT NUMBER OF MATCHES
 COUNT_OF_MATCHES = len(mentors_list)
 
+# Getter for COUNT_OF_MATCHES
 def get_count_of_matches():
     global COUNT_OF_MATCHES
     return COUNT_OF_MATCHES
 
+# Increments COUNT_OF_MATCHES
 def increment_count_of_matches():
     global COUNT_OF_MATCHES
     COUNT_OF_MATCHES += 1
 
-# Creating the graph 
-xls_file_total_score = pd.ExcelFile('total_score.xlsx')
-df_total_score = xls_file_total_score.parse('Sheet1')
+# Initially the excel sheet 'total_score.xlsx' is used for the dashboard
+# until new data is uploaded to the dashboard. The 'total_score.xlsx' sheet
+# is hard coded and stored in the root directory
+hardcoded_file_total_score = pd.ExcelFile('total_score.xlsx')
+df_total_score = hardcoded_file_total_score.parse('Sheet1')
 
-# list of solvers
+# list of solvers from hard coded 'total_score.xlsx'
 Solvers = list(df_total_score.columns[1:])
-# List of mentors
+# List of mentors from hard coded 'total_score.xlsx'
 Mentors = list(df_total_score["Org_y"])
 
-# Sort total score df to top 5 for initial selected solver -> Solvers[0]
-# sorted_df = df_total_score.sort_values(Solvers[0], ascending=False)
-#print(cropped_total_dcore_df)
-
-# bar graph of total score for a specific solver
+# Creates the initial horizonatl bar graph that is displayed on the dashboard
 total_fig = px.bar(df_total_score.sort_values(Solvers[0], ascending=False)[:5], x=Solvers[0], 
 y="Org_y", labels = {'Org_y':'MENTOR',Solvers[0]:'Total Score'})
 total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
@@ -108,27 +103,26 @@ total_fig.update_layout(
         t=100,
         pad=4
     )
-    #paper_bgcolor="LightSteelBlue",
 )
 
-# Getting first Solver Table from dropdown bar
+# Getting initial, hardcoded Solver Table from dropdown bar
 solver_needs_df = pd.read_csv("unused_files/excel_to_csv/solver_team_data.csv")
 selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns')
 selected_solver_row_info_list = list(solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns'))
 
-# Getting first Mentor Table - will be blank initially
-mentor_data_df = pd.read_csv("unused_files/excel_to_csv/partner_data.csv")
-selected_mentor_row_info = mentor_data_df[mentor_data_df['Org']==Mentors[0]].dropna(axis='columns')
-selected_mentor_row_info_list = list(mentor_data_df[mentor_data_df['Org']==Mentors[0]].dropna(axis='columns'))
-
-
-# Creates a dictionary of all the Solver info to put in the options of selected_solver_table
+# Creates a dictionary of all the Solver info to put in the selected_solver_table
 selected_solver_row_list = []
 for col in selected_solver_row_info:
     ind_row_dict = {}
     ind_row_dict["label"] = col
     ind_row_dict["value"] = selected_solver_row_info[col]
     selected_solver_row_list.append(ind_row_dict)
+
+# DO WE EVEN NEED THIS CODE
+# Getting initial, hardcoded Mentor Table - will be blank initially
+mentor_data_df = pd.read_csv("unused_files/excel_to_csv/partner_data.csv")
+selected_mentor_row_info = mentor_data_df[mentor_data_df['Org']==Mentors[0]].dropna(axis='columns')
+selected_mentor_row_info_list = list(mentor_data_df[mentor_data_df['Org']==Mentors[0]].dropna(axis='columns'))
 
 
 # Creates a dictionary to put all Solvers as options of drop down menu
@@ -140,12 +134,14 @@ for solver in Solvers:
     solver_list_dict.append(ind_solver_dict)
 
 # Method that generates tables
-# Used to for the selected_solver_table and clicked_on_mentor_table
-def generate_table(dataframe, max_rows=10):
-    # go through excel sheet and find how many matches a mentor currently has
-    # do if statements to determine a color
-    
-    color_code = 'green'
+# Used for the selected_solver_table and clicked_on_mentor_table
+def generate_table(dataframe, max_rows=200):    
+    """
+    inputs:
+    dataframe, padas df - dataframe to output to a table
+    max_rows, int - max amount of rows to print. Set at 100 to 
+    be high enough to deal with any dataframe used in this dashboard
+    """
     return html.Table([
         html.Thead(
             html.Tr([html.Th(col) for col in dataframe.columns])
@@ -157,11 +153,11 @@ def generate_table(dataframe, max_rows=10):
         ])
         
     ], 
-    )
+)
 
 
-# This allows the input excel file to be turned into csv files which will be used
-# to calculate the information required for pairing
+# Allows the input excel fileS to be turned into csv files which will be used
+# to calculate the information required for pairing in create_total_score.py
 def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "uploaded_excel_to_csv/"):
     """
     inputs:
@@ -172,7 +168,6 @@ def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "uploaded_excel_to_c
                         a seperte csv file
 
     """    
-
     if not os.path.isdir(csv_file_base_path+csv_folder): 
         os.mkdir(csv_file_base_path+csv_folder)
     full_path = csv_file_base_path+csv_folder
@@ -194,7 +189,7 @@ def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "uploaded_excel_to_c
      #( "{} has been saved at {}".format(sheet_name, csv_file_full_path))
 
 
-# Method used to parse files from upload button
+# Method used to parse files that are uploaded through the upload button
 def parse_contents(contents, filename, date):
     '''
     contents - contents of the file being uploaded
@@ -226,16 +221,7 @@ def parse_contents(contents, filename, date):
             'There was an error processing this file.'
         ])
     ExceltoCSV(excel_file=filename , csv_file_base_path ="" )
-    # Returns an html table of the df to be printed currently
-    # return html.Div([
-    #     html.H5(filename),
-    #     dash_table.DataTable(
-    #         data=df.to_dict('records'),
-    #         columns=[{'name': i, 'id': i} for i in df.columns]
-    #     ),
-    # ])
     return None
-
 
 
 # APP LAYOUT
@@ -248,7 +234,7 @@ app.layout = html.Div(children=[
         }
     ),
 
-    # Upload files
+    # Upload files button
     dcc.Upload(
         id='upload-data',
         children=html.Button('Upload Excel Data File'),
@@ -260,7 +246,7 @@ app.layout = html.Div(children=[
         multiple=True
     ),
 
-    # Download all excel files
+    # Download all excel files button
     html.Div(children=[
         html.A(html.Button('Download All Excel Files'), href="/download_all/",
         ),
@@ -270,7 +256,7 @@ app.layout = html.Div(children=[
         'textAlign': 'center',
     }),
 
-    # Drop down menu
+    # Solver drop down menu 
     html.Label('Select a Solver'),
         dcc.Dropdown(
             id='Solver_dropdown',
@@ -278,30 +264,33 @@ app.layout = html.Div(children=[
             value = solver_list_dict[0]['value'], 
            ),
 
+    # A few line breaks to make dashboard less crowded
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
+
+    # Title for the horizontal bar graph
     html.H2(children='Total Outputs Graph', style={'textAlign': 'center'}),
 
-    # Display graph for total score
+    # Horizontal graph
     dcc.Graph( 
         id='output_bargraph',
         figure= total_fig
     ),
 
-   
-
-    # Generates the table for the selected solver from the dropdown
+    # Generates the table for the selected solver
+    # selected_solver_row_info is that data of the seleced solver
+    # that will go into the table
     html.H4(children='Selected Solver Information',style={'textAlign': 'center'}),
     dash_table.DataTable(
         id='selected_solver_table',
         columns=[{"name": i, "id": i} for i in selected_solver_row_info.columns],
         data=selected_solver_row_info.to_dict('records'),
         style_cell={
-        'whiteSpace': 'normal',
-        'height': 'auto',
-        'textAlign': 'center',
-        'font_family': 'helvetica',
-        'font_size': '20px',
+            'whiteSpace': 'normal',
+            'height': 'auto',
+            'textAlign': 'center',
+            'font_family': 'helvetica',
+            'font_size': '20px',
         },
         style_header={
         'backgroundColor': 'rgb(30, 30, 30)',
@@ -309,11 +298,11 @@ app.layout = html.Div(children=[
         },
     ),
 
-
+    # A few line breaks to make dashboard less crowded
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
    
-    # generate a checkbox for the mentor 
+    # Generate a checkbox that determines whether the current partner and solver 
     html.H3(children='Click Checkbox to Confirm Match between Selected Solver and Selected Mentor',
         style={'textAlign': 'center'}
     ),
@@ -326,26 +315,28 @@ app.layout = html.Div(children=[
         style={
             'textAlign': 'center',
         },
-        value='Denied',
+        value='Denied', # set intitial value to 'denied' which means no match
         inputStyle={"margin-right": "20px"},
         labelStyle={'display': 'inline-block'}
     ),  
 
-    # THis is a breakline
+    # A line break to make dashboard less crowded
     html.P(children=html.Br(), style={'textAlign': 'center'}),
 
-    # Generates table for the clicked on mentor
+    # Generates table for the mentor that is clicked on in the graph
+    # selected_mentor_row_info is that data of the seleced mentor
+    # that will go into the table - initially this table won't be populated
     html.H4(children='Clicked on Mentor Information',style={'textAlign': 'center'}),
     dash_table.DataTable(
         id='clicked_on_mentor_table',
         columns=[{"name": i, "id": i} for i in selected_mentor_row_info.columns],
         data=selected_mentor_row_info.to_dict('records'),
         style_cell={
-        'whiteSpace': 'normal',
-        'height': 'auto',
-        'textAlign': 'center',
-        'font_family': 'helvetica',
-        'font_size': '20px',
+            'whiteSpace': 'normal',
+            'height': 'auto',
+            'textAlign': 'center',
+            'font_family': 'helvetica',
+            'font_size': '20px',
         },
         style_header={
         'backgroundColor': 'rgb(30, 30, 30)',
@@ -353,35 +344,39 @@ app.layout = html.Div(children=[
         },
     ),
     html.H4(children='Green = 0-1 matches, Blue = 2-3 matches, Red = 4 or more matches',style={'textAlign': 'center'}),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-    # html.P(children=html.Br(), style={'textAlign': 'center'}),
-    # html.P(children=html.Br(), style={'textAlign': 'center'}),
 
-    # printing df from uploaded file
+    # A few line breaks to make dashboard less crowded
+    html.P(children=html.Br(), style={'textAlign': 'center'}),
+    html.P(children=html.Br(), style={'textAlign': 'center'}),
+
+    # Used to print out the newly calculated total score dataframe from
+    # the uploaded files. Should only be used for debugging and is not set 
+    # to be functional right now
     html.Div(id='output-data-upload'),
 
-    # printing df from uploaded file
+    # Print the solver matches for the selected mentor below the mentor table
     html.Div(id='mentor-matches-list',
     children=[]),
 
+    # Break line to space out the dashboard
     html.P(children=html.Br(), style={'textAlign': 'center'}),
 
-    # hidden app layout which is target of callbacks that don't update anything
+    # hidden app layout which is target of callbacks that don't update anything but
+    # plotly dash requires outputs for all callbacks
     html.Div(id='hidden-div', 
     ),
 
-     # Comment box
+    # Comment box
     dcc.Textarea(
         id='textarea-for-comments',
-        value='Text area for comments',
+        value='Text area for comments', # initial value
         style={'width': '50%', 'height': 200, 'Align-items': 'center'},
     ),
-
 ])
 
 
-# Callback that list current matches for a given mentor
+# This callback prints the current list of solver matches for the current selected mentor
+# If there are no matches it default prints
 @app.callback(
     dash.dependencies.Output('mentor-matches-list', 'children'),
     [dash.dependencies.Input('checkbox_confirm', 'value')],
@@ -393,19 +388,24 @@ def list_matches_for_a_mentor(value, clickData, solver_name):
     mentors_list = df['MENTOR'].tolist()
     solvers_list = df['SOLVER'].tolist()
 
+    # If no mentor is selected
     if clickData == None:
+        # defualt response
         return 'You need to select a mentor'
 
     matches_list = []
 
+    # populate a list with all the solvers currently matched with the mentor
     for i in range(len(solvers_list)):
         if mentors_list[i] == str(clickData['points'][0]['label']):
             matches_list.append(solvers_list[i])
 
+    # If match is just created add the selected solver (solver_name) to the list
     if value == 'Confirm':
         if solver_name not in matches_list:
             matches_list.append(solver_name)
 
+    # If match is just deleted remove the selected solver (solver_name) from the list
     if value == 'Denied':
         if solver_name in matches_list:
             matches_list.remove(solver_name)
@@ -413,12 +413,12 @@ def list_matches_for_a_mentor(value, clickData, solver_name):
     if matches_list == []:
         return 'no current matches for this mentor'
     else:
-
         return "List of current matches for " + str(clickData['points'][0]['label']) + ": \n" + str(matches_list)
+
 
 # This method allows for you to download all of the generated excel files as a zip file
 # Files are challenge_match.xlsx, geo_match.xlsx, needs_match.xlsx, stage_match.xlsx,
-# total_score_from_upload.xlsx
+# total_score_from_upload.xlsx and mit_solve_confirmed_matches.xlsx
 @app.server.route('/download_all/')
 def download_all():
     zipf = zipfile.ZipFile('app/MIT_Solve_Excel_Files.zip','w', zipfile.ZIP_DEFLATED)
@@ -434,7 +434,7 @@ def download_all():
 
 
 # This method will update the table displaying more information
-# on any mentor that is clicked on in the graph
+# on the mentor that is clicked on in the graph
 @app.callback(
     [dash.dependencies.Output('clicked_on_mentor_table', 'data'),
     dash.dependencies.Output('clicked_on_mentor_table', 'style_cell')],
@@ -442,36 +442,30 @@ def download_all():
     dash.dependencies.Input('checkbox_confirm', 'value'),
     ])
 def display_click_data(clickData, value):
+    # Check to make sure a mentore is selected
     if clickData != None:
         mentor_name = clickData['points'][0]['label']
         mentor_data_df = pd.read_csv("uploaded_excel_to_csv/partner_data.csv")
         selected_mentor_row_info = mentor_data_df[mentor_data_df['Org']==mentor_name].dropna(axis='columns')
         generate_table(selected_mentor_row_info)
-
-        # pick color for color_code based on number of matches
         df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
         mentors_list = df['MENTOR'].tolist()
 
+        
+        # This loop counts how many matches there are for the specific mentor
         mentor_matches_count = 0
         for i in range(len(mentors_list)):
             if mentors_list[i] == mentor_name:
                 mentor_matches_count += 1
-               # print('found a match')
 
-        if value == 'Confirm':
-            mentor_matches_count += 1
-
-        if value == 'Denied':
-            mentor_matches_count -= 1
-
+        # Pick color for color_code based on number of matches
+        # STILL A LITTLE BUGGY, DOESN'T UPDATE LIVE
         if mentor_matches_count <= 1:
             color_code = 'green'
         elif mentor_matches_count == 2 or mentor_matches_count == 3:
             color_code = 'blue'
         else:
             color_code = 'red'
-
-
 
         new_style = {
             'whiteSpace': 'normal',
@@ -492,7 +486,8 @@ def display_click_data(clickData, value):
         }]
 
 
-# Callback that either checks off or leaves blank the checkbox when a new solver is selected
+# Callback that either checks off or leaves blank the checkbox when a new solver or
+# partneris selected
 @app.callback(
     dash.dependencies.Output('checkbox_confirm', 'value'),
     [dash.dependencies.Input('Solver_dropdown', 'value'),
@@ -503,28 +498,23 @@ def check_or_uncheck_checkbox(solver_name, clickData):
     mentors_list = df['MENTOR'].tolist()
     solvers_list = df['SOLVER'].tolist()
 
-    # print(df)
-    # print(mentors_list)
-    # print(solvers_list)
-
+    # check to make sure there is a mentor selected
     if clickData == None:
             return 'You need to select a mentor'
 
+    # iterate through list of solvers to find currently selected solver (solver_name)
     for i in range(len(solvers_list)):
         if solvers_list[i] == solver_name:
+            # if the solver name is found check if its mentor is the currently selected mentor
             if mentors_list[i] == clickData['points'][0]['label']:
-                # This is already a match 
- #               print("This is a match already, set checkbox to 'Confirm'")
+                # This is  a match 
                 return 'Confirm'
-    # This is not a match yet
- #   print("this is not a match yet")
+
+    # If we get here this is not a match
     return 'Denied'
 
 
-
-
-
-# Callback that adds and deletes in matches to a spreadsheet
+# Callback that adds and deletes matches to the 'mit_solve_confirmed_matches.xlsx'
 @app.callback(
     dash.dependencies.Output('hidden-div', 'children'),
     [dash.dependencies.Input('checkbox_confirm', 'value')],
@@ -532,6 +522,7 @@ def check_or_uncheck_checkbox(solver_name, clickData):
     dash.dependencies.State('output_bargraph', 'clickData')]
     )
 def add_confirmed_match(checkbox, solver_name, clickData):
+    # Check if we are adding a match
     if checkbox == 'Confirm':
         if clickData == None:
             return 'You need to select a mentor'
@@ -545,38 +536,20 @@ def add_confirmed_match(checkbox, solver_name, clickData):
                 if solvers_list[i] == solver_name:
                     if mentors_list[i] == clickData['points'][0]['label']:
                         # This is already a match 
-                      #  print("This is a match already, set checkbox to 'Confirm'")
                         return None
-
-            # this is the version that works on local host !!!!!!!!!!!!
-            # # if we get here this is not a match
-            # # write match to excel sheet
-            # wb = xw.Book('mit_solve_confirmed_matches.xlsx')
-            # sht1 = wb.sheets['MIT_SOLVE_Confirmed_Matches']
-
-            # matches_count = get_count_of_matches()
-
-            # # write in mentor
-            # sht1.range('A' + str(COUNT_OF_MATCHES + 2)).value = str(clickData['points'][0]['label'])
-            # # write in solver
-            # sht1.range('B' + str(COUNT_OF_MATCHES + 2)).value = str(solver_name)
-            # wb.save('mit_solve_confirmed_matches.xlsx')
-            # # increment count_of_matches
-            # increment_count_of_matches()
 
             file = 'mit_solve_confirmed_matches.xlsx'
             wb = openpyxl.load_workbook(filename=file)
-            # Select the right sheet
             ws = wb.get_sheet_by_name('Sheet1')
 
-            # count number of matches
+            # count number of matches 
+            # start the count at 1 to account for this match not being added to the sheet yet
             matches_count_for_mentor = 1
             for i in range(len(mentors_list)):
                 if mentors_list[i] == clickData['points'][0]['label']:
                     matches_count_for_mentor += 1
                     
-
-            # insert the mentor and solver name
+            # insert the mentor and solver names, as well as datetime and number of matches
             time_right_now = datetime.datetime.now()
             ws['A' + str(COUNT_OF_MATCHES + 2)] = str(clickData['points'][0]['label'])
             ws['B' + str(COUNT_OF_MATCHES + 2)] = str(solver_name)
@@ -584,10 +557,11 @@ def add_confirmed_match(checkbox, solver_name, clickData):
             ws['D' + str(COUNT_OF_MATCHES + 2)] = str(matches_count_for_mentor)
             # Save the workbook
             wb.save(file)
+            #increment amount of total matches
             increment_count_of_matches()
-
             return ''
-    # when checkbox changes from confirm to denied
+
+    # Check if we are removing a match
     if checkbox == 'Denied':
         if clickData == None:
             return 'No mentor selected'
@@ -600,35 +574,21 @@ def add_confirmed_match(checkbox, solver_name, clickData):
             for i in range(len(solvers_list)):
                 if solvers_list[i] == solver_name:
                     if mentors_list[i] == clickData['points'][0]['label']:
-                        # This match needs to be deleted 
-                       # print("This is match should be deleted and box sould be 'Denied'")
-                        
-                        # This is version that works
-                        # # this will be where we delete a match
-                        # wb = xw.Book('mit_solve_confirmed_matches.xlsx')
-                        # sht1 = wb.sheets['MIT_SOLVE_Confirmed_Matches']  
-
-                        # # write in mentor
-                        # sht1.range('A' + str(i + 2)).value = str('')
-                        # # write in solver
-                        # sht1.range('B' + str(i + 2)).value = str('')
-
-                        # wb.save('mit_solve_confirmed_matches.xlsx')
+                        # This match needs to be deleted
 
                         file = 'mit_solve_confirmed_matches.xlsx'
                         wb = openpyxl.load_workbook(filename=file)
                         # Select the right sheet
                         ws = wb.get_sheet_by_name('Sheet1')
-                        # insert the mentor and solver name
-
+                        # insert the mentor and solver name, datetime, and number of matches
                         ws['A' + str(i + 2)] = str('')
                         ws['B' + str(i + 2)] = str('')
                         ws['C' + str(i + 2)] = str('')
                         ws['D' + str(i + 2)] = str('')
                         # Save the workbook
                         wb.save(file)
-
-
+                        # NEED TO DECREMENT NUMBER OF MATCHES HERE
+                        # LOGIC MAY NEED WORK TOO, NOT SURE IF JUST DECREMENTING IS THE RIGHT MOVE
 
 
 # This method updates the table displaying more information on a solver
@@ -637,11 +597,13 @@ def add_confirmed_match(checkbox, solver_name, clickData):
     dash.dependencies.Output('selected_solver_table', 'data'),
     [dash.dependencies.Input('Solver_dropdown', 'value')])
 def update_solver_table(value):
+    # Checks if new files have been uploaded yet instead of hard coded
     try:
         solver_needs_df = pd.read_csv("uploaded_excel_to_csv/solver_team_data.csv")
         selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
         generate_table(selected_solver_row_info)  
         return selected_solver_row_info.to_dict('records')
+    # Uses the hard coded Solver info if no files have been uploaded yet
     except:
         solver_needs_df = pd.read_csv("unused_files/excel_to_csv/solver_team_data.csv")
         selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
@@ -654,10 +616,11 @@ def update_solver_table(value):
     dash.dependencies.Output('output_bargraph', 'figure'),
     [dash.dependencies.Input('Solver_dropdown', 'value')])
 def update_graph_from_solver_dropdown(value):
-    # create new df here of uploaded info
+    # Checks if new files have been uploaded yet instead of hard coded
     try:
         xls_file_total_score = pd.ExcelFile('MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx')
         uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
+    # Uses the hard coded files if no files have been uploaded yet
     except:
         uploaded_df_total_score = df_total_score
     # Sort and crop top 5 values for new selected solver
@@ -666,11 +629,10 @@ def update_graph_from_solver_dropdown(value):
     total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
     return total_fig
 
-
 # This method will create csv files for each sheet
-# from the uploaded file. The file must be in the format of
+# from the uploaded file. The uploaded file must be in the format of
 # a singular excel file consisting of 2 sheets, which are the 
-# partner_data and solver_team_data
+# partner_data and solver_team_data in that order
 @app.callback(
     dash.dependencies.Output('output-data-upload', 'children'),
     [dash.dependencies.Input('upload-data', 'contents')],
@@ -680,20 +642,10 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
     if list_of_contents is not None:
         # list_of_uploaded_files is fully available here
         children = [
-            # parse_contents prints out the files as tables
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
-        # these two lines below are what could potentially cause zip file errors
         new_total_score = create_total_score_excel()
         new_total_score.insert(0, "Partners", Mentors, True)
-        # Returns an html table of the df to be printed currently
-        # return html.Div([
-        #     html.H5("Calculate Total Score Table"),
-        #     dash_table.DataTable(
-        #         data=new_total_score.to_dict('records'),
-        #         columns=[{'name': item, 'id': item} for item in new_total_score.columns]
-        #     ),
-        # ])
         return None
 
 
@@ -704,18 +656,16 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
     [dash.dependencies.Input('upload-data', 'contents')],
 )
 def point_graph_to_uploaded_files(contents):
-
     try:
         # create new df from uploaded file
         xls_file_total_score = pd.ExcelFile('MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx')
         uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
         # Create new graph with uploaded data instead of hardcoded
         new_solvers = list(uploaded_df_total_score.columns[1:])
+        # Returns a different solver its obvious whether this worked or not
         return new_solvers[8]
     except:
         return Solvers[0]
-    
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)
