@@ -32,6 +32,8 @@ import dash_html_components as html
 import plotly.express as px
 import pandas as pd
 import dash
+import dash_bootstrap_components as dbc
+import plotly.graph_objects as go
 
 # writing to excel files
 import openpyxl
@@ -105,6 +107,8 @@ total_fig.update_layout(
     )
 )
 
+
+
 # Getting initial, hardcoded Solver Table from dropdown bar
 solver_needs_df = pd.read_csv("unused_files/excel_to_csv/solver_team_data.csv")
 selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns')
@@ -118,7 +122,7 @@ for col in selected_solver_row_info:
     ind_row_dict["value"] = selected_solver_row_info[col]
     selected_solver_row_list.append(ind_row_dict)
 
-# DO WE EVEN NEED THIS CODE
+# DO WE EVEN NEED THIS CODE???
 # Getting initial, hardcoded Mentor Table - will be blank initially
 mentor_data_df = pd.read_csv("unused_files/excel_to_csv/partner_data.csv")
 selected_mentor_row_info = mentor_data_df[mentor_data_df['Org']==Mentors[0]].dropna(axis='columns')
@@ -268,14 +272,32 @@ app.layout = html.Div(children=[
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
 
-    # Title for the horizontal bar graph
-    html.H2(children='Total Outputs Graph', style={'textAlign': 'center'}),
+    
 
-    # Horizontal graph
-    dcc.Graph( 
-        id='output_bargraph',
-        figure= total_fig
-    ),
+    # 2 side by side graphs
+    html.Div([
+        html.Div([
+            # Title for the horizontal bar graph
+             html.H2(children='Total Outputs Graph', style={'textAlign': 'center'}),
+             # Horizontal total outputs graph
+            dcc.Graph( 
+                id='output_bargraph',
+                figure= total_fig
+            ),
+        ], className="six columns"),
+
+        html.Div([
+            html.H3('Individual Graph'),
+            dcc.Graph(id='individual_graph', figure={'data': []})
+        ], className="six columns"),
+    ], className="row"),
+
+
+    # # Horizontal graph
+    # dcc.Graph( 
+    #     id='output_bargraph',
+    #     figure= total_fig
+    # ),
 
     # Generates the table for the selected solver
     # selected_solver_row_info is that data of the seleced solver
@@ -486,6 +508,65 @@ def display_click_data(clickData, value):
         }]
 
 
+# This method will update the table displaying more information
+# on the mentor that is clicked on in the graph
+@app.callback(
+    [dash.dependencies.Output('individual_graph', 'figure')],
+    [dash.dependencies.Input('output_bargraph', 'clickData'),],
+    [dash.dependencies.State('Solver_dropdown', 'value')]
+    )
+def update_individual_graph(clickData, value):
+    # Check to make sure a mentore is selected
+    if clickData != None:
+        # Must get value for mentor compared to solver in: geo, needs, stage, challenge
+        partner_name = clickData['points'][0]['label']
+
+        geo_df = pd.read_csv("unused_files/excel_to_csv/geo_match.csv")
+        geo_value = float(geo_df[geo_df["Partners\Solvers"]==partner_name].iloc[0][value])
+        # if geo_value.empty:
+        #     geo_value = 0
+        
+        needs_df = pd.read_csv("unused_files/excel_to_csv/needs_match.csv")
+        needs_value = float(needs_df[needs_df["Partners\Solvers"]==partner_name].iloc[0][value])
+        # if needs_value.empty:
+        #     needs_value = 0
+
+        stage_df = pd.read_csv("unused_files/excel_to_csv/stage_match.csv")
+        stage_value = float(stage_df[stage_df["Partners\Solvers"]==partner_name].iloc[0][value])
+        # if stage_value.empty:
+        #     stage_value = 0
+
+        challenge_df = pd.read_csv("unused_files/excel_to_csv/challenge_match.csv")
+        challenge_value = float(challenge_df[challenge_df["Partners\Solvers"]==partner_name].iloc[0][value])
+        # if challenge_value.empty:
+        #     challenge_value = 0
+
+        partner_values_dict = {'Labels': ['Challenges Score', 'Needs Score', 'Geo Score * Stage Score',
+        'Geo Score', 'Stage Score'], 'Scores': [10*challenge_value, needs_value, 100*geo_value*stage_value,
+        10*geo_value, 10*stage_value]}
+
+        ind_fig = px.bar(partner_values_dict, x='Scores', y='Labels')
+        
+        return [ind_fig]
+    
+    figure={'data': []}
+    return [figure]
+
+
+
+
+
+
+
+
+
+
+
+        
+        
+
+
+
 # Callback that either checks off or leaves blank the checkbox when a new solver or
 # partneris selected
 @app.callback(
@@ -666,6 +747,12 @@ def point_graph_to_uploaded_files(contents):
         return new_solvers[8]
     except:
         return Solvers[0]
+
+
+# adding external stylesheets for 2 side by side graphs
+app.css.append_css({
+    'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'
+})
 
 if __name__ == '__main__':
     app.run_server(debug=True)
