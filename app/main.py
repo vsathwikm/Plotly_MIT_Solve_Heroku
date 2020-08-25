@@ -287,11 +287,60 @@ app.layout = html.Div(children=[
         ], className="six columns"),
 
         html.Div([
-            html.H3('Individual Graph'),
+            html.H3(id='individual_graph_title', children='Individual Graph', style={'textAlign': 'center'}),
             dcc.Graph(id='individual_graph', figure={'data': []})
         ], className="six columns"),
     ], className="row"),
 
+
+    html.H4(id='weights_directions', children='Adjust Weight Values inside of Brackets Only --> [ ] '),
+    # 2 side by side comment boxes for weights
+    html.Div([
+        html.Div([
+            # Comment box 1
+            dcc.Textarea(
+                id='geo-weight',
+                value='Textbox1', # initial value
+                style={'display':'inline-block', 'width': '30%', 'height': '10%',},
+            ),
+        ], className="four columns"),
+        html.Div([
+            # Comment box 2
+            dcc.Textarea(
+                id='needs-weight',
+                value='Textbox2', # initial value
+                style={'display':'inline-block', 'width': '30%', 'height': '10%',},
+            ),
+        ], className="four columns")        
+    ], className="row"),
+
+    # 2 side by side comment boxes for weights
+    html.Div([
+        html.Div([
+            # Comment box 3
+            dcc.Textarea(
+                id='challenges-weight',
+                value='Textbox3', # initial value
+                style={'display':'inline-block', 'width': '30%', 'height': '10%',},
+            ),
+        ], className="four columns"),
+        html.Div([
+            # Comment box 4
+            dcc.Textarea(
+                id='stage-weight',
+                value='Textbox4', # initial value
+                style={'display':'inline-block', 'width': '30%', 'height': '10%',},
+            ),
+        ], className="four columns"),      
+    ], className="row"),
+    html.P(children=html.Br(), style={'textAlign': 'center'}),
+    html.Button('Submit Changes to Weights', id='submit-val', n_clicks=0),
+    html.P(children=html.Br(), style={'textAlign': 'center'}),
+    html.Div(id='confirmation-text',
+             children='Press Submit to Edit Weights'),
+
+
+     
 
     # # Horizontal graph
     # dcc.Graph( 
@@ -441,6 +490,7 @@ def list_matches_for_a_mentor(value, clickData, solver_name):
 # This method allows for you to download all of the generated excel files as a zip file
 # Files are challenge_match.xlsx, geo_match.xlsx, needs_match.xlsx, stage_match.xlsx,
 # total_score_from_upload.xlsx and mit_solve_confirmed_matches.xlsx
+# TODO make sure the correct files are being uploaded - think wrong ones are right now
 @app.server.route('/download_all/')
 def download_all():
     zipf = zipfile.ZipFile('app/MIT_Solve_Excel_Files.zip','w', zipfile.ZIP_DEFLATED)
@@ -511,7 +561,8 @@ def display_click_data(clickData, value):
 # This method will update the table displaying more information
 # on the mentor that is clicked on in the graph
 @app.callback(
-    [dash.dependencies.Output('individual_graph', 'figure')],
+    [dash.dependencies.Output('individual_graph', 'figure'),
+    dash.dependencies.Output('individual_graph_title', 'children')],
     [dash.dependencies.Input('output_bargraph', 'clickData'),],
     [dash.dependencies.State('Solver_dropdown', 'value')]
     )
@@ -523,48 +574,99 @@ def update_individual_graph(clickData, value):
 
         geo_df = pd.read_csv("unused_files/excel_to_csv/geo_match.csv")
         geo_value = float(geo_df[geo_df["Partners\Solvers"]==partner_name].iloc[0][value])
-        # if geo_value.empty:
-        #     geo_value = 0
         
         needs_df = pd.read_csv("unused_files/excel_to_csv/needs_match.csv")
         needs_value = float(needs_df[needs_df["Partners\Solvers"]==partner_name].iloc[0][value])
-        # if needs_value.empty:
-        #     needs_value = 0
 
         stage_df = pd.read_csv("unused_files/excel_to_csv/stage_match.csv")
         stage_value = float(stage_df[stage_df["Partners\Solvers"]==partner_name].iloc[0][value])
-        # if stage_value.empty:
-        #     stage_value = 0
 
         challenge_df = pd.read_csv("unused_files/excel_to_csv/challenge_match.csv")
         challenge_value = float(challenge_df[challenge_df["Partners\Solvers"]==partner_name].iloc[0][value])
-        # if challenge_value.empty:
-        #     challenge_value = 0
 
         partner_values_dict = {'Labels': ['Challenges Score', 'Needs Score', 'Geo Score * Stage Score',
         'Geo Score', 'Stage Score'], 'Scores': [10*challenge_value, needs_value, 100*geo_value*stage_value,
         10*geo_value, 10*stage_value]}
 
         ind_fig = px.bar(partner_values_dict, x='Scores', y='Labels')
+        return_string = "Individual Graph for '" + str(partner_name) + "'"
         
-        return [ind_fig]
+        return [ind_fig, return_string]
     
     figure={'data': []}
-    return [figure]
+    return [figure, '']
+
+# This callback fills the textboxes with weights of the current solver/partner pairing selected
+@app.callback(
+    [dash.dependencies.Output('geo-weight', 'value'),
+    dash.dependencies.Output('needs-weight', 'value'),
+    dash.dependencies.Output('challenges-weight', 'value'),
+    dash.dependencies.Output('stage-weight', 'value'),],
+    [dash.dependencies.Input('Solver_dropdown', 'value'),
+    dash.dependencies.Input('output_bargraph', 'clickData')]
+)
+def fill_weight_text_boxes(solver_name, clickData):
+    df = pd.read_excel('solver_partner_weights.xlsx')
+    if clickData != None:
+        partner_name = clickData['points'][0]['label']
+        weights = str(df[df["Org_y"]==partner_name].iloc[0][solver_name])
+
+        # Splicing out the specific weights from the comment box
+        # These are all indexes of commas within the weights string
+        first_comma = weights.index(',')                      
+        second_comma = weights[(first_comma + 1):].index(',') + first_comma + 1
+        third_comma = weights[(second_comma + 1):].index(',') + second_comma + 1
+
+        # Use the indexes of the commas to read in the weights
+        geo_weight = weights[0:first_comma]
+        needs_weight = weights[(first_comma+1):second_comma]
+        challenges_weight = weights[(second_comma+1):third_comma]
+        stage_weight = weights[(third_comma+1):]
+
+        return ['weight for geo: [' + geo_weight + ']', 'weight for needs: [' + needs_weight + ']', 
+        'weight for challenge: [' + challenges_weight + ']', 'weight for stage: [' + stage_weight + ']']
+    return ['Select Mentor Please', 'Select Mentor Please', 'Select Mentor Please', 'Select Mentor Please']
+    
 
 
+# This callback edits weights in the excel sheet when submit button pressed
+# TODO: currently the 'successfully edited...' message doesn't go away when a new 
+# pairing is selected
+@app.callback(
+    [dash.dependencies.Output('confirmation-text', 'children'),],
+    [dash.dependencies.Input('submit-val', 'n_clicks')],
+    [dash.dependencies.State('geo-weight', 'value'),
+    dash.dependencies.State('needs-weight', 'value'),
+    dash.dependencies.State('challenges-weight', 'value'),
+    dash.dependencies.State('stage-weight', 'value'),
+    dash.dependencies.State('Solver_dropdown', 'value'),
+    dash.dependencies.State('output_bargraph', 'clickData'),
+    dash.dependencies.State('confirmation-text', 'children')
+    ]
+)
+def edit_excel_sheet_with_new_weights(button_children, 
+new_geo_weight, new_needs_weight, new_challenges_weight,
+ new_stage_weight, solver_name, clickData, 
+current_confirmation_text):
+    if clickData != None:
+        print('edited')
+        partner_name = clickData['points'][0]['label']
 
+        file = 'solver_partner_weights.xlsx'
+        wb = openpyxl.load_workbook(filename=file)
+        ws = wb.get_sheet_by_name('Sheet1')
 
+        # create new string to put in excel sheet
+        new_weights = new_geo_weight[17:-1] + ',' + new_needs_weight[19:-1] + ',' + new_challenges_weight[23:-1] + ',' + new_stage_weight[19:-1]
+        # overwrite the old weights with new ones
+        partner_row_num = Mentors.index(partner_name) + 2
+        solver_col_num = Solvers.index(solver_name) + 2
 
-
-
-
-
-
-
-        
-        
-
+        ws.cell(row=partner_row_num, column=solver_col_num).value = new_weights
+        # Save the workbook
+        wb.save(file)
+        return ['Weights edited for pairing of ' + partner_name + " and " + solver_name]
+    return ['']
 
 
 # Callback that either checks off or leaves blank the checkbox when a new solver or
