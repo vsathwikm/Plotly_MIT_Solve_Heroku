@@ -118,14 +118,16 @@ def pivot_table_geo( unpivoted_solver_geo, partners_geo, export=False):
                                        columns='Org_x',
                                        values='geo',
                                        aggfunc=np.sum).fillna(0)
-    if export==True: 
-        geo_pivot.to_excel("MIT_SOLVE_downloadable_excel_files/geo_match.xlsx")
+    
 
     geo_pivot_copy = geo_pivot_values.copy()
     for col in geo_pivot_copy.columns: 
         geo_pivot_copy[col] = geo_pivot_copy[col].astype(str)
         geo_pivot_copy[col] = geo_pivot_copy[col].apply(lambda x: 0 if x.strip()== '0' else len(x.split()))
                                           
+    if export==True: 
+        geo_pivot_copy.to_excel("MIT_SOLVE_downloadable_excel_files/geo_match.xlsx")
+
     return geo_pivot_values, geo_pivot_copy 
 
 
@@ -222,8 +224,7 @@ def pivot_table_needs(unpivoted_solver_needs, partners_needs, export=False):
                                 columns="Org_x",
                                 values="needs_match",
                                 aggfunc=np.sum)
-    if export == True: 
-        needs_pivot.to_excel("MIT_SOLVE_downloadable_excel_files/needs_match.xlsx")
+    
     need_pivot_values = pd.pivot_table(merged_needs,
                                        index="Org_y",
                                        columns="Org_x",
@@ -234,6 +235,9 @@ def pivot_table_needs(unpivoted_solver_needs, partners_needs, export=False):
    
     for col in need_pivot_copy.columns:     
         need_pivot_copy[col] = need_pivot_copy[col].apply(lambda x: 0 if len(str(x))>4 or x == 0 else len(str(x))) 
+
+    if export == True: 
+        need_pivot_copy.to_excel("MIT_SOLVE_downloadable_excel_files/needs_match.xlsx")
 
     return  need_pivot_values, need_pivot_copy
 
@@ -299,8 +303,7 @@ def pivot_table_challenges(ch_solver, ch_partners_reset, export=False):
                                         columns=["Org_x"],
                                         aggfunc=np.sum)
     
-    if export == True:
-        merged_pivot_table.to_excel("MIT_SOLVE_downloadable_excel_files/challenge_match.xlsx")
+    
     challenges_pivot = merged_pivot_table.copy()
     challenges_pivot = challenges_pivot.fillna(0)
     challenges_pivot_nulled = challenges_pivot.isnull()
@@ -308,6 +311,9 @@ def pivot_table_challenges(ch_solver, ch_partners_reset, export=False):
     for col in challenges_pivot_nulled.columns: 
         challenges_pivot_nulled[col] = challenges_pivot_nulled[col].apply(lambda x: 0 if x is True else 1)
     challenges_pivot_copy = challenges_pivot_nulled.copy()
+
+    if export == True:
+        challenges_pivot_copy.to_excel("MIT_SOLVE_downloadable_excel_files/challenge_match.xlsx")
     
     return challenges_pivot, challenges_pivot_copy
 
@@ -372,8 +378,7 @@ def pivot_table_stage(st_solver, st_partners, export=False):
     #merged_st_ptable = merged_st_ptable.fillna(0).reset_index()
     merged_st_ptable = merged_st_ptable.fillna(0)
 
-    if export == True: 
-        merged_st_ptable.to_excel("MIT_SOLVE_downloadable_excel_files/stage_match.xlsx")
+    
     stage_pivot = merged_st_ptable.copy()
 
     for col in stage_pivot.columns: 
@@ -383,6 +388,9 @@ def pivot_table_stage(st_solver, st_partners, export=False):
     stage_pivot_copy = stage_pivot.copy()
     #stage_pivot_copy = stage_pivot_copy.drop(labels="Org_y", axis=1)
     stage_pivot_copy
+
+    if export == True: 
+        stage_pivot_copy.to_excel("MIT_SOLVE_downloadable_excel_files/stage_match.xlsx")
     
     return stage_pivot, stage_pivot_copy
 

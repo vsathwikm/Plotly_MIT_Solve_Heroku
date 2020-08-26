@@ -64,6 +64,4 @@ def create_total_score_excel():
     # Export to total_score.xlsx
     total_score.to_excel("MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx")
 
-
-
     return total_score
