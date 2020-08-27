@@ -11,7 +11,6 @@ import dash_auth
 from flask import Flask 
 
 # for downloading excel file
-import dash_table_experiments as dte
 from flask import send_file
 import zipfile
 
@@ -20,9 +19,7 @@ import csv
 import xlrd
 import sys
 
-# for writing to confirmed matches excel sheet
-from xlwt import Workbook
-from xlutils.copy import copy # not sure if needed
+
 
 # for app
 import os
@@ -32,7 +29,6 @@ import dash_html_components as html
 import plotly.express as px
 import pandas as pd
 import dash
-import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
 # writing to excel files
@@ -67,7 +63,7 @@ auth = dash_auth.BasicAuth(
 # Determines how many matches have been created so writing to the excel
 # file with new matches is a smooth process
 df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
-partners_list = df['MENTOR'].tolist()
+partners_list = df['PARTNER'].tolist()
 # GLOBAL VARIABLE USED TO COUNT NUMBER OF MATCHES
 COUNT_OF_MATCHES = len(partners_list)
 
@@ -84,7 +80,7 @@ def increment_count_of_matches():
 # Initially the excel sheet 'total_score.xlsx' is used for the dashboard
 # until new data is uploaded to the dashboard. The 'total_score.xlsx' sheet
 # is hard coded and stored in the root directory
-hardcoded_file_total_score = pd.ExcelFile('total_score.xlsx')
+hardcoded_file_total_score = pd.ExcelFile('../total_score.xlsx')
 df_total_score = hardcoded_file_total_score.parse('Sheet1')
 
 # list of solvers from hard coded 'total_score.xlsx'
@@ -94,7 +90,7 @@ Partners = list(df_total_score["Org_y"])
 
 # Creates the initial horizonatl bar graph that is displayed on the dashboard
 total_fig = px.bar(df_total_score.sort_values(Solvers[0], ascending=False)[:5], x=Solvers[0], 
-y="Org_y", labels = {'Org_y':'MENTOR',Solvers[0]:'Total Score'})
+y="Org_y", labels = {'Org_y':'PARTNER',Solvers[0]:'Total Score'})
 total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
 # Format the bar graph
 total_fig.update_layout(
@@ -111,7 +107,7 @@ total_fig.update_layout(
 )
 
 # Getting initial, hardcoded Solver Table from dropdown bar
-solver_needs_df = pd.read_csv("unused_files/excel_to_csv/solver_team_data.csv")
+solver_needs_df = pd.read_csv("../unused_files/excel_to_csv/solver_team_data.csv")
 selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns')
 selected_solver_row_info_list = list(solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns'))
 
@@ -124,7 +120,7 @@ for col in selected_solver_row_info:
     selected_solver_row_list.append(ind_row_dict)
 
 # Getting initial, hardcoded Partner Table - will be blank initially
-partner_data_df = pd.read_csv("unused_files/excel_to_csv/partner_data.csv")
+partner_data_df = pd.read_csv("../unused_files/excel_to_csv/partner_data.csv")
 selected_partner_row_info = partner_data_df[partner_data_df['Org']==Partners[0]].dropna(axis='columns')
 selected_partner_row_info_list = list(partner_data_df[partner_data_df['Org']==Partners[0]].dropna(axis='columns'))
 
@@ -162,7 +158,7 @@ def generate_table(dataframe, max_rows=200):
 
 # Allows the input excel files to be turned into csv files which will be used
 # to calculate the information required for pairings in create_total_score.py
-def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "uploaded_excel_to_csv/"):
+def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "../uploaded_excel_to_csv/"):
     '''
     inputs:
     Excel file, str - name of the original file
@@ -451,7 +447,7 @@ def list_matches_for_a_partner(value, clickData, solver_name):
     return: a str containing the current matches for the selected mentor or a default response
     '''
     df = pd.read_excel('mit_solve_confirmed_matches.xlsx')
-    partners_list = df['MENTOR'].tolist()
+    partners_list = df['PARTNER'].tolist()
     solvers_list = df['SOLVER'].tolist()
 
     # If no partner is selected
@@ -518,11 +514,11 @@ def display_click_data(clickData, value):
     # Check to make sure a partnere is selected
     if clickData != None:
         partner_name = clickData['points'][0]['label']
-        partner_data_df = pd.read_csv("uploaded_excel_to_csv/partner_data.csv")
+        partner_data_df = pd.read_csv("../uploaded_excel_to_csv/partner_data.csv")
         selected_partner_row_info = partner_data_df[partner_data_df['Org']==partner_name].dropna(axis='columns')
         generate_table(selected_partner_row_info)
         df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
-        partners_list = df['MENTOR'].tolist()
+        partners_list = df['PARTNER'].tolist()
 
         
         # This loop counts how many matches there are for the specific partner
@@ -580,16 +576,16 @@ def update_individual_graph(clickData, solver_name):
         # Must get value for partner compared to solver in: geo, needs, stage, challenge
         partner_name = clickData['points'][0]['label']
 
-        geo_df = pd.read_csv("unused_files/excel_to_csv/geo_match.csv")
+        geo_df = pd.read_csv("../unused_files/excel_to_csv/geo_match.csv")
         geo_value = float(geo_df[geo_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
         
-        needs_df = pd.read_csv("unused_files/excel_to_csv/needs_match.csv")
+        needs_df = pd.read_csv("../unused_files/excel_to_csv/needs_match.csv")
         needs_value = float(needs_df[needs_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
 
-        stage_df = pd.read_csv("unused_files/excel_to_csv/stage_match.csv")
+        stage_df = pd.read_csv("../unused_files/excel_to_csv/stage_match.csv")
         stage_value = float(stage_df[stage_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
 
-        challenge_df = pd.read_csv("unused_files/excel_to_csv/challenge_match.csv")
+        challenge_df = pd.read_csv("../unused_files/excel_to_csv/challenge_match.csv")
         challenge_value = float(challenge_df[challenge_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
 
         partner_values_dict = {'Labels': ['Challenges Score', 'Needs Score', 'Geo Score * Stage Score',
@@ -622,7 +618,7 @@ def fill_weight_text_boxes(solver_name, clickData):
     return: challenges-weight value (str) - the text that will be displayed in the challenges weight textbox
     return: stage-weight value (str) - the text that will be displayed in the stage weight textbox
     '''
-    df = pd.read_excel('solver_partner_weights.xlsx')
+    df = pd.read_excel('../solver_partner_weights.xlsx')
     if clickData != None:
         partner_name = clickData['points'][0]['label']
         weights = str(df[df["Org_y"]==partner_name].iloc[0][solver_name])
@@ -679,7 +675,7 @@ def edit_excel_sheet_with_new_weights(button_children,
         print('edited')
         partner_name = clickData['points'][0]['label']
 
-        file = 'solver_partner_weights.xlsx'
+        file = '../solver_partner_weights.xlsx'
         wb = openpyxl.load_workbook(filename=file)
         ws = wb.get_sheet_by_name('Sheet1')
 
@@ -719,7 +715,7 @@ def check_or_uncheck_checkbox(solver_name, clickData):
     return: checkbox_confirm value (str) - status of mentor/solver pairing
     '''
     df = pd.read_excel('mit_solve_confirmed_matches.xlsx')
-    partners_list = df['MENTOR'].tolist()
+    partners_list = df['PARTNER'].tolist()
     solvers_list = df['SOLVER'].tolist()
 
     # check to make sure there is a partner selected
@@ -759,7 +755,7 @@ def add_confirmed_match(checkbox, solver_name, clickData):
             return 'You need to select a partner'
         else:
             df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
-            partners_list = df['MENTOR'].tolist()
+            partners_list = df['PARTNER'].tolist()
             solvers_list = df['SOLVER'].tolist()
 
             # checks if already a match
@@ -798,7 +794,7 @@ def add_confirmed_match(checkbox, solver_name, clickData):
             return 'No partner selected'
         else:
             df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
-            partners_list = df['MENTOR'].tolist()
+            partners_list = df['PARTNER'].tolist()
             solvers_list = df['SOLVER'].tolist()
 
             # checks if already a match
@@ -834,13 +830,13 @@ def update_solver_table(value):
     '''
     # Checks if new files have been uploaded yet instead of hard coded
     try:
-        solver_needs_df = pd.read_csv("uploaded_excel_to_csv/solver_team_data.csv")
+        solver_needs_df = pd.read_csv("../uploaded_excel_to_csv/solver_team_data.csv")
         selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
         generate_table(selected_solver_row_info)  
         return selected_solver_row_info.to_dict('records')
     # Uses the hard coded Solver info if no files have been uploaded yet
     except:
-        solver_needs_df = pd.read_csv("unused_files/excel_to_csv/solver_team_data.csv")
+        solver_needs_df = pd.read_csv("../unused_files/excel_to_csv/solver_team_data.csv")
         selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
         generate_table(selected_solver_row_info)  
         return selected_solver_row_info.to_dict('records')
@@ -864,7 +860,7 @@ def update_graph_from_solver_dropdown(value):
         uploaded_df_total_score = df_total_score
     # Sort and crop top 5 values for new selected solver
     total_fig = px.bar(uploaded_df_total_score.sort_values(value, ascending=False)[:5], x=value, 
-    y="Org_y", labels = {'Org_y':'MENTOR',value:'Total Score'})
+    y="Org_y", labels = {'Org_y':'PARTNER',value:'Total Score'})
     total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
     return total_fig
 
@@ -918,10 +914,7 @@ def point_graph_to_uploaded_files(contents):
         return Solvers[0]
 
 
-# adding external stylesheets for 2 side by side graphs
-app.css.append_css({
-    'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'
-})
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
