@@ -3,7 +3,7 @@ import numpy as np
 import zebra 
 import os
 
-def create_total_score_excel():
+def create_total_score_excel(export_path):
     ''' This function will create the total_score.xlsx
     sheet from the uploaded files
     '''
@@ -29,7 +29,7 @@ def create_total_score_excel():
     unpivoted_solver_geo = zebra.solver_regions_listform(solver_geo, solver_df)
 
     # Generate pivot table
-    _,geo_pivot_copy = zebra.pivot_table_geo(unpivoted_solver_geo,partners_geo,export=True)
+    _,geo_pivot_copy = zebra.pivot_table_geo(unpivoted_solver_geo,partners_geo, export_path, export=True)
 
     # Get needs for Partners
     partners_needs = zebra.get_partners_needs(partners_df)
@@ -38,7 +38,7 @@ def create_total_score_excel():
     unpivoted_solver_needs= zebra.get_solver_needs(solver_df)
 
     # Read in partner pivot table
-    needs_values, needs_pivot_copy = zebra.pivot_table_needs(unpivoted_solver_needs,partners_needs,export=True)
+    needs_values, needs_pivot_copy = zebra.pivot_table_needs(unpivoted_solver_needs,partners_needs, export_path, export=True)
 
     # Get Partner Challenges
     ch_partners_challenges = zebra.get_ch_partners(partners_df)
@@ -47,7 +47,7 @@ def create_total_score_excel():
     ch_solver = zebra.get_ch_solvers(solver_df)
 
     # Generate pivot table
-    challenges_pivot, challenges_pivot_copy = zebra.pivot_table_challenges(ch_solver, ch_partners_challenges,export=True)
+    challenges_pivot, challenges_pivot_copy = zebra.pivot_table_challenges(ch_solver, ch_partners_challenges, export_path, export=True)
 
     # Get Parter stage data
     st_partners = zebra.get_st_partners(partners_df)
@@ -56,12 +56,13 @@ def create_total_score_excel():
     st_solver = zebra.get_st_solver(solver_df)
 
     # Generate pivot table
-    _,stage_pivot_copy = zebra.pivot_table_stage(st_solver, st_partners, export=True)
+    _,stage_pivot_copy = zebra.pivot_table_stage(st_solver, st_partners, export_path, export=True)
 
     # Combine all of the answers
     total_score = ((geo_pivot_copy.astype(int)*stage_pivot_copy.astype(int))*100) + (challenges_pivot_copy.astype(int)*10 ) + needs_pivot_copy
 
     # Export to total_score.xlsx
-    total_score.to_excel("MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx")
+    # total_score.to_excel("MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx")
+    total_score.to_excel("total_score_from_upload.xlsx")
 
     return total_score

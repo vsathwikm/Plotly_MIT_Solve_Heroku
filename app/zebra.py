@@ -88,7 +88,7 @@ def solver_regions_listform(solver_geo, solver_df):
 
     return unpivoted_solver_geo
 
-def pivot_table_geo( unpivoted_solver_geo, partners_geo, export=False):
+def pivot_table_geo( unpivoted_solver_geo, partners_geo, export_path,  export=False):
     """ Generate a pivot table for geographical preferences
 
     :param unpivoted_solver_geo: List form data representing a solver team's geological preference
@@ -126,7 +126,7 @@ def pivot_table_geo( unpivoted_solver_geo, partners_geo, export=False):
         geo_pivot_copy[col] = geo_pivot_copy[col].apply(lambda x: 0 if x.strip()== '0' else len(x.split()))
                                           
     if export==True: 
-        geo_pivot_copy.to_excel("MIT_SOLVE_downloadable_excel_files/geo_match.xlsx")
+        geo_pivot_copy.to_excel("".join([export_path, "/geo_match.xlsx"]))
 
     return geo_pivot_values, geo_pivot_copy 
 
@@ -200,7 +200,7 @@ def get_solver_needs(solver_df):
 
 
 
-def pivot_table_needs(unpivoted_solver_needs, partners_needs, export=False): 
+def pivot_table_needs(unpivoted_solver_needs, partners_needs, export_path,  export=False): 
     """ Generate the pivot table for solver-partner needs 
 
     :param unpivoted_solver_needs: An unpivoted table of solver needs
@@ -237,7 +237,7 @@ def pivot_table_needs(unpivoted_solver_needs, partners_needs, export=False):
         need_pivot_copy[col] = need_pivot_copy[col].apply(lambda x: 0 if len(str(x))>4 or x == 0 else len(str(x))) 
 
     if export == True: 
-        need_pivot_copy.to_excel("MIT_SOLVE_downloadable_excel_files/needs_match.xlsx")
+        need_pivot_copy.to_excel("".join([export_path,"/needs_match.xlsx"]))
 
     return  need_pivot_values, need_pivot_copy
 
@@ -278,7 +278,7 @@ def get_ch_solvers(solver_df):
     return ch_solver
 
 
-def pivot_table_challenges(ch_solver, ch_partners_reset, export=False):
+def pivot_table_challenges(ch_solver, ch_partners_reset, export_path, export=False):
     """ Generate the challenges pivot table
 
     :param ch_solver: An unpivoted list of solver preferences
@@ -313,7 +313,7 @@ def pivot_table_challenges(ch_solver, ch_partners_reset, export=False):
     challenges_pivot_copy = challenges_pivot_nulled.copy()
 
     if export == True:
-        challenges_pivot_copy.to_excel("MIT_SOLVE_downloadable_excel_files/challenge_match.xlsx")
+        challenges_pivot_copy.to_excel("".join([export_path, "challenge_match.xlsx"]))
     
     return challenges_pivot, challenges_pivot_copy
 
@@ -351,7 +351,7 @@ def get_st_solver(solver_df):
     return st_solver
 
 
-def pivot_table_stage(st_solver, st_partners, export=False):
+def pivot_table_stage(st_solver, st_partners, export_path,  export=False):
     """ Generate the stage pivot table
 
     :param st_solver: An unpivoted DataFrame of solver preferences
@@ -390,11 +390,11 @@ def pivot_table_stage(st_solver, st_partners, export=False):
     stage_pivot_copy
 
     if export == True: 
-        stage_pivot_copy.to_excel("MIT_SOLVE_downloadable_excel_files/stage_match.xlsx")
+        stage_pivot_copy.to_excel("".join([export_path, "/stage_match.xlsx" ]))
     
     return stage_pivot, stage_pivot_copy
 
 
-# if __name__ == "__main__":
-    #print(get_regions_dict())
+if __name__ == "__main__":
+    print(get_regions_dict())
 

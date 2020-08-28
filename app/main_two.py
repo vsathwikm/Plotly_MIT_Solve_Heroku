@@ -30,7 +30,7 @@ import plotly.express as px
 import pandas as pd
 import dash
 import plotly.graph_objects as go
-
+from dash.dependencies import Output, Input
 # writing to excel files
 import openpyxl
 
@@ -80,58 +80,58 @@ def increment_count_of_matches():
 # Initially the excel sheet 'total_score.xlsx' is used for the dashboard
 # until new data is uploaded to the dashboard. The 'total_score.xlsx' sheet
 # is hard coded and stored in the root directory
-hardcoded_file_total_score = pd.ExcelFile('../total_score.xlsx')
-df_total_score = hardcoded_file_total_score.parse('Sheet1')
+# hardcoded_file_total_score = pd.ExcelFile('../total_score.xlsx')
+# df_total_score = hardcoded_file_total_score.parse('Sheet1')
 
 # list of solvers from hard coded 'total_score.xlsx'
-Solvers = list(df_total_score.columns[1:])
+# Solvers = list(df_total_score.columns[1:])
 # List of partners from hard coded 'total_score.xlsx'
-Partners = list(df_total_score["Org_y"])
+# Partners = list(df_total_score["Org_y"])
 
 # Creates the initial horizonatl bar graph that is displayed on the dashboard
-total_fig = px.bar(df_total_score.sort_values(Solvers[0], ascending=False)[:5], x=Solvers[0], 
-y="Org_y", labels = {'Org_y':'PARTNER',Solvers[0]:'Total Score'})
-total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
-# Format the bar graph
-total_fig.update_layout(
-    autosize=True,
-    # width=700,
-    height=500,
-    margin=dict(
-        l=50,
-        r=50,
-        b=100,
-        t=100,
-        pad=4
-    )
-)
+# total_fig = px.bar(df_total_score.sort_values(Solvers[0], ascending=False)[:5], x=Solvers[0], 
+# y="Org_y", labels = {'Org_y':'PARTNER',Solvers[0]:'Total Score'})
+# total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
+# # Format the bar graph
+# total_fig.update_layout(
+#     autosize=True,
+#     # width=700,
+#     height=500,
+#     margin=dict(
+#         l=50,
+#         r=50,
+#         b=100,
+#         t=100,
+#         pad=4
+#     )
+# )
 
 # Getting initial, hardcoded Solver Table from dropdown bar
-solver_needs_df = pd.read_csv("../unused_files/excel_to_csv/solver_team_data.csv")
-selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns')
-selected_solver_row_info_list = list(solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns'))
+# solver_needs_df = pd.read_csv("../unused_files/excel_to_csv/solver_team_data.csv")
+# selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns')
+# selected_solver_row_info_list = list(solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns'))
 
 # Creates a dictionary of all the Solver info to put in the selected_solver_table
 selected_solver_row_list = []
-for col in selected_solver_row_info:
-    ind_row_dict = {}
-    ind_row_dict["label"] = col
-    ind_row_dict["value"] = selected_solver_row_info[col]
-    selected_solver_row_list.append(ind_row_dict)
+# for col in selected_solver_row_info:
+#     ind_row_dict = {}
+#     ind_row_dict["label"] = col
+#     ind_row_dict["value"] = selected_solver_row_info[col]
+#     selected_solver_row_list.append(ind_row_dict)
 
 # Getting initial, hardcoded Partner Table - will be blank initially
-partner_data_df = pd.read_csv("../unused_files/excel_to_csv/partner_data.csv")
-selected_partner_row_info = partner_data_df[partner_data_df['Org']==Partners[0]].dropna(axis='columns')
-selected_partner_row_info_list = list(partner_data_df[partner_data_df['Org']==Partners[0]].dropna(axis='columns'))
+# partner_data_df = pd.read_csv("../unused_files/excel_to_csv/partner_data.csv")
+# selected_partner_row_info = partner_data_df[partner_data_df['Org']==Partners[0]].dropna(axis='columns')
+# selected_partner_row_info_list = list(partner_data_df[partner_data_df['Org']==Partners[0]].dropna(axis='columns'))
 
 
 # Creates a dictionary to put all Solvers as options of drop down menu
 solver_list_dict = []
-for solver in Solvers:
-    ind_solver_dict = {}
-    ind_solver_dict["label"]=solver
-    ind_solver_dict["value"]=solver
-    solver_list_dict.append(ind_solver_dict)
+# for solver in Solvers:
+#     ind_solver_dict = {}
+#     ind_solver_dict["label"]=solver
+#     ind_solver_dict["value"]=solver
+#     solver_list_dict.append(ind_solver_dict)
 
 # Method that generates tables
 # Used for the selected_solver_table and clicked_on_partner_table
@@ -174,7 +174,7 @@ def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "../uploaded_excel_t
     workbook = xlrd.open_workbook(excel_file)
 
     for sheet_name in workbook.sheet_names():
-     #   print('processing - ' + sheet_name)
+        print('processing - ' + sheet_name)
         worksheet = workbook.sheet_by_name(sheet_name)
         csv_file_full_path = full_path + sheet_name.lower().replace(" - ", "_").replace(" ","_") + '.csv'
         csvfile = open(csv_file_full_path, 'w',encoding='utf-8')
@@ -215,6 +215,7 @@ def parse_contents(contents, filename, date):
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
             df = pd.read_excel(io.BytesIO(decoded))
+            df.to_excel("mock_input_data.xlsx")
     except Exception as e:
         print(e)
         return html.Div([
@@ -223,9 +224,9 @@ def parse_contents(contents, filename, date):
     ExceltoCSV(excel_file=filename , csv_file_base_path ="" )
     return None
 
-################################ START APP ################################################
-#########################################################################################
 
+################################ START APP ################################################
+###########################################################################################
 
 # APP LAYOUT
 app.layout = html.Div(children=[
@@ -248,7 +249,7 @@ app.layout = html.Div(children=[
         # Allow multiple files to be uploaded
         multiple=True
     ),
-
+    html.Button('Submit', id='download-files', n_clicks=0),
     # Download all excel files button
     html.Div(children=[
         html.A(html.Button('Download All Excel Files'), href="/download_all/",
@@ -259,12 +260,14 @@ app.layout = html.Div(children=[
         'textAlign': 'center',
     }),
 
+    html.Div(id="download-div", style={"display": "None"}), 
+
     # Solver drop down menu 
     html.Label('Select a Solver'),
         dcc.Dropdown(
             id='Solver_dropdown',
-            options= solver_list_dict,
-            value = solver_list_dict[0]['value'], 
+            # options= solver_list_dict,
+            # value = solver_list_dict[0]['value'], 
            ),
 
     # A few line breaks to make dashboard less crowded
@@ -279,7 +282,7 @@ app.layout = html.Div(children=[
              # Horizontal total outputs graph
             dcc.Graph( 
                 id='output_bargraph',
-                figure= total_fig
+                # figure= total_fig
             ),
         ], className="six columns"),
 
@@ -342,19 +345,19 @@ app.layout = html.Div(children=[
     html.H4(children='Selected Solver Information',style={'textAlign': 'center'}),
     dash_table.DataTable(
         id='selected_solver_table',
-        columns=[{"name": i, "id": i} for i in selected_solver_row_info.columns],
-        data=selected_solver_row_info.to_dict('records'),
-        style_cell={
-            'whiteSpace': 'normal',
-            'height': 'auto',
-            'textAlign': 'center',
-            'font_family': 'helvetica',
-            'font_size': '20px',
-        },
-        style_header={
-        'backgroundColor': 'rgb(30, 30, 30)',
-        'color': 'white',
-        },
+        # columns=[{"name": i, "id": i} for i in selected_solver_row_info.columns],
+        # data=selected_solver_row_info.to_dict('records'),
+        # style_cell={
+        #     'whiteSpace': 'normal',
+        #     'height': 'auto',
+        #     'textAlign': 'center',
+        #     'font_family': 'helvetica',
+        #     'font_size': '20px',
+        # },
+        # style_header={
+        # 'backgroundColor': 'rgb(30, 30, 30)',
+        # 'color': 'white',
+        # },
     ),
 
     # A few line breaks to make dashboard less crowded
@@ -388,19 +391,19 @@ app.layout = html.Div(children=[
     html.H4(children='Clicked on Partner Information',style={'textAlign': 'center'}),
     dash_table.DataTable(
         id='clicked_on_partner_table',
-        columns=[{"name": i, "id": i} for i in selected_partner_row_info.columns],
-        data=selected_partner_row_info.to_dict('records'),
-        style_cell={
-            'whiteSpace': 'normal',
-            'height': 'auto',
-            'textAlign': 'center',
-            'font_family': 'helvetica',
-            'font_size': '20px',
-        },
-        style_header={
-        'backgroundColor': 'rgb(30, 30, 30)',
-        'color': 'white',
-        },
+        # columns=[{"name": i, "id": i} for i in selected_partner_row_info.columns],
+        # data=selected_partner_row_info.to_dict('records'),
+        # style_cell={
+        #     'whiteSpace': 'normal',
+        #     'height': 'auto',
+        #     'textAlign': 'center',
+        #     'font_family': 'helvetica',
+        #     'font_size': '20px',
+        # },
+        # style_header={
+        # 'backgroundColor': 'rgb(30, 30, 30)',
+        # 'color': 'white',
+        # },
     ),
     html.H4(children='Green = 0-1 matches, Blue = 2-3 matches, Red = 4 or more matches',style={'textAlign': 'center'}),
 
@@ -433,8 +436,84 @@ app.layout = html.Div(children=[
     ),
 ])
 
+
 ################################ END APP ################################################
 #########################################################################################
+
+
+# This method will create csv files for each sheet
+# from the uploaded file. The uploaded file must be in the format of
+# a singular excel file consisting of 2 sheets, which are the 
+# partner_data and solver_team_data in that order
+@app.callback(
+    dash.dependencies.Output('output-data-upload', 'children'),
+    [dash.dependencies.Input('upload-data', 'contents')],
+    [dash.dependencies.State('upload-data', 'filename'),
+    dash.dependencies.State('upload-data', 'last_modified')])
+def update_output(list_of_contents, list_of_names, list_of_dates):
+    '''
+    param: contents - all of the files uploaded
+    param: filename - name of the uploaded file
+    param: last_modified - the date in which the file was last modified
+    return: irrelavent output, will never be printed out and is used to 
+    comply with needing an Output for every callback
+    '''
+
+    if list_of_contents is not None:
+        # list_of_uploaded_files is fully available here
+        children = [
+            parse_contents(c, n, d) for c, n, d in
+            zip(list_of_contents, list_of_names, list_of_dates)]
+        new_total_score = create_total_score_excel("../upload_outputs")
+        new_total_score.insert(0, "Partners", Partners, True)
+        return None
+
+
+@app.callback(
+    Output('download-div', 'children'), 
+    [dash.dependencies.Input('upload-data', 'contents'),
+    dash.dependencies.Input("download-files", "n_clicks")],
+    [dash.dependencies.State('upload-data', 'filename'),
+    dash.dependencies.State('upload-data', 'last_modified')],    
+)
+def download_files(list_of_contents, n_clicks,  list_names, list_dates ): 
+     if list_of_contents is not None:
+        # list_of_uploaded_files is fully available here
+        children = [
+            parse_contents(c, n, d) for c, n, d in
+            zip(list_of_contents, list_names, list_dates)]
+        new_total_score = create_total_score_excel("../upload_outputs")
+        new_total_score.insert(0, "Partners", Partners, True)
+        zipf = zipfile.ZipFile('total_score_file.zip','w', zipfile.ZIP_DEFLATED)
+        zipf.write('total_score_test.xlsx')
+        zipf.close()
+        return send_file('total_score_file.zip',
+            mimetype = 'zip',
+            attachment_filename= 'test_download.zip',
+            as_attachment = True)
+
+
+
+
+# # This method allows for you to download all of the generated excel files as a zip file
+# # Files are challenge_match.xlsx, geo_match.xlsx, needs_match.xlsx, stage_match.xlsx,
+# # total_score_from_upload.xlsx and mit_solve_confirmed_matches.xlsx
+# # TODO make sure the correct files are being uploaded - think wrong ones are right now
+# @app.server.route('/download_all/')
+# def download_all():
+#     if 
+#     zipf = zipfile.ZipFile('app/MIT_Solve_Excel_Files.zip','w', zipfile.ZIP_DEFLATED)
+#     for root,dirs, files in os.walk('../MIT_SOLVE_downloadable_excel_files/'):
+#         for file in files:
+#             zipf.write('../MIT_SOLVE_downloadable_excel_files/'+file)
+#     zipf.write('mit_solve_confirmed_matches.xlsx')
+#     zipf.close()
+#     return send_file('MIT_Solve_Excel_Files.zip',
+#             mimetype = 'zip',
+#             attachment_filename= 'MIT_Solve_Excel_Files.zip',
+#             as_attachment = True)
+
+
 
 # This callback prints the current list of solver matches for the current selected partner
 # If there are no matches it default prints
@@ -483,22 +562,6 @@ def list_matches_for_a_partner(value, clickData, solver_name):
         return "List of current matches for " + str(clickData['points'][0]['label']) + ": \n" + str(matches_list)
 
 
-# This method allows for you to download all of the generated excel files as a zip file
-# Files are challenge_match.xlsx, geo_match.xlsx, needs_match.xlsx, stage_match.xlsx,
-# total_score_from_upload.xlsx and mit_solve_confirmed_matches.xlsx
-# TODO make sure the correct files are being uploaded - think wrong ones are right now
-@app.server.route('/download_all/')
-def download_all():
-    zipf = zipfile.ZipFile('app/MIT_Solve_Excel_Files.zip','w', zipfile.ZIP_DEFLATED)
-    for root,dirs, files in os.walk('MIT_SOLVE_downloadable_excel_files/'):
-        for file in files:
-            zipf.write('MIT_SOLVE_downloadable_excel_files/'+file)
-    zipf.write('mit_solve_confirmed_matches.xlsx')
-    zipf.close()
-    return send_file('MIT_Solve_Excel_Files.zip',
-            mimetype = 'zip',
-            attachment_filename= 'MIT_Solve_Excel_Files.zip',
-            as_attachment = True)
 
 
 # This method will update the table displaying more information
@@ -869,31 +932,7 @@ def update_graph_from_solver_dropdown(value):
     total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
     return total_fig
 
-# This method will create csv files for each sheet
-# from the uploaded file. The uploaded file must be in the format of
-# a singular excel file consisting of 2 sheets, which are the 
-# partner_data and solver_team_data in that order
-@app.callback(
-    dash.dependencies.Output('output-data-upload', 'children'),
-    [dash.dependencies.Input('upload-data', 'contents')],
-    [dash.dependencies.State('upload-data', 'filename'),
-    dash.dependencies.State('upload-data', 'last_modified')])
-def update_output(list_of_contents, list_of_names, list_of_dates):
-    '''
-    param: contents - all of the files uploaded
-    param: filename - name of the uploaded file
-    param: last_modified - the date in which the file was last modified
-    return: irrelavent output, will never be printed out and is used to 
-    comply with needing an Output for every callback
-    '''
-    if list_of_contents is not None:
-        # list_of_uploaded_files is fully available here
-        children = [
-            parse_contents(c, n, d) for c, n, d in
-            zip(list_of_contents, list_of_names, list_of_dates)]
-        new_total_score = create_total_score_excel()
-        new_total_score.insert(0, "Partners", Partners, True)
-        return None
+
 
 
 # This callback will create a new bar chart with the data from the uploaded excel
