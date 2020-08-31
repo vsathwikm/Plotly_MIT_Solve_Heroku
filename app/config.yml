@@ -1,0 +1,4 @@
+outputs: "outputs/"
+zipped: "output_zipped/"
+zipf_name: "MIT_Solve_Excel_Files.zip"
+solver_location: "outputs/solver_team_data.csv"

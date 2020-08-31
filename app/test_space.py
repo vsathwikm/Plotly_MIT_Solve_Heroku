@@ -69,9 +69,9 @@ def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "../uploaded_excel_t
         csvfile.close()
      #( "{} has been saved at {}".format(sheet_name, csv_file_full_path))
 
-
-
 if __name__ == "__main__":
     filename = "../mock_input_data.xlsx" 
 
     ExceltoCSV(excel_file=filename , csv_file_base_path ="" )
+    solver_needs_df = pd.read_csv('outputs/solver_team_data.csv')
+    solvers = solver_needs_df['Org'].values.tolist()

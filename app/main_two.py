@@ -19,7 +19,7 @@ import csv
 import xlrd
 import sys
 
-
+import shutil
 
 # for app
 import os
@@ -33,6 +33,11 @@ import plotly.graph_objects as go
 from dash.dependencies import Output, Input
 # writing to excel files
 import openpyxl
+import yaml 
+
+
+with open("config.yml") as config_file: 
+     config = yaml.load(config_file, Loader=yaml.FullLoader)
 
 
 # for adding basic Auth 
@@ -158,7 +163,7 @@ def generate_table(dataframe, max_rows=200):
 
 # Allows the input excel files to be turned into csv files which will be used
 # to calculate the information required for pairings in create_total_score.py
-def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = "../uploaded_excel_to_csv/"):
+def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = config['outputs']):
     '''
     inputs:
     Excel file, str - name of the original file
@@ -215,7 +220,7 @@ def parse_contents(contents, filename, date):
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
             df = pd.read_excel(io.BytesIO(decoded))
-            df.to_excel("mock_input_data.xlsx")
+           
     except Exception as e:
         print(e)
         return html.Div([
@@ -223,6 +228,12 @@ def parse_contents(contents, filename, date):
         ])
     ExceltoCSV(excel_file=filename , csv_file_base_path ="" )
     return None
+
+options = [
+    {"label": "New York City", "value": "NYC"},
+    {"label": "Montreal", "value": "MTL"},
+    {"label": "San Francisco", "value": "SF"},
+]
 
 
 ################################ START APP ################################################
@@ -241,7 +252,7 @@ app.layout = html.Div(children=[
     # Upload files button
     dcc.Upload(
         id='upload-data',
-        children=html.Button('Upload Excel Data File'),
+        children=html.Button('Upload Excel Data File', id='upload_button', n_clicks=0),
         style={
             'height': '60px',
             'textAlign': 'center',
@@ -249,7 +260,7 @@ app.layout = html.Div(children=[
         # Allow multiple files to be uploaded
         multiple=True
     ),
-    html.Button('Submit', id='download-files', n_clicks=0),
+  
     # Download all excel files button
     html.Div(children=[
         html.A(html.Button('Download All Excel Files'), href="/download_all/",
@@ -260,14 +271,11 @@ app.layout = html.Div(children=[
         'textAlign': 'center',
     }),
 
-    html.Div(id="download-div", style={"display": "None"}), 
-
     # Solver drop down menu 
     html.Label('Select a Solver'),
         dcc.Dropdown(
             id='Solver_dropdown',
-            # options= solver_list_dict,
-            # value = solver_list_dict[0]['value'], 
+            value = '',  
            ),
 
     # A few line breaks to make dashboard less crowded
@@ -458,504 +466,497 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
     return: irrelavent output, will never be printed out and is used to 
     comply with needing an Output for every callback
     '''
+    if os.path.exists(config['outputs']): 
+        shutil.rmtree(config['outputs'])
+        os.makedirs(config['outputs'])
+    else: 
+        os.makedirs(config['outputs'])
+
 
     if list_of_contents is not None:
         # list_of_uploaded_files is fully available here
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
-        new_total_score = create_total_score_excel("../upload_outputs")
-        new_total_score.insert(0, "Partners", Partners, True)
+        new_total_score = create_total_score_excel(config['outputs'])
+        # new_total_score.insert(0, "Partners", Partners, True)
         return None
 
-
-@app.callback(
-    Output('download-div', 'children'), 
-    [dash.dependencies.Input('upload-data', 'contents'),
-    dash.dependencies.Input("download-files", "n_clicks")],
-    [dash.dependencies.State('upload-data', 'filename'),
-    dash.dependencies.State('upload-data', 'last_modified')],    
-)
-def download_files(list_of_contents, n_clicks,  list_names, list_dates ): 
-     if list_of_contents is not None:
-        # list_of_uploaded_files is fully available here
-        children = [
-            parse_contents(c, n, d) for c, n, d in
-            zip(list_of_contents, list_names, list_dates)]
-        new_total_score = create_total_score_excel("../upload_outputs")
-        new_total_score.insert(0, "Partners", Partners, True)
-        zipf = zipfile.ZipFile('total_score_file.zip','w', zipfile.ZIP_DEFLATED)
-        zipf.write('total_score_test.xlsx')
-        zipf.close()
-        return send_file('total_score_file.zip',
+# This method allows for you to download all of the generated excel files as a zip file
+# Files are challenge_match.xlsx, geo_match.xlsx, needs_match.xlsx, stage_match.xlsx,
+# total_score_from_upload.xlsx and mit_solve_confirmed_matches.xlsx
+# TODO make sure the correct files are being uploaded - think wrong ones are right now
+@app.server.route('/download_all/')
+def download_all():
+    
+    zipf = zipfile.ZipFile(config['zipf_name'],'w', zipfile.ZIP_DEFLATED)
+   
+    for root,dirs, files in os.walk(config['outputs']):
+        for file in files:
+            zipf.write(config['outputs']+file)
+    # zipf.write('mit_solve_confirmed_matches.xlsx')
+    zipf.close()
+    return send_file(config['zipf_name'],
             mimetype = 'zip',
-            attachment_filename= 'test_download.zip',
+            attachment_filename= config['zipf_name'],
             as_attachment = True)
 
 
-
-
-# # This method allows for you to download all of the generated excel files as a zip file
-# # Files are challenge_match.xlsx, geo_match.xlsx, needs_match.xlsx, stage_match.xlsx,
-# # total_score_from_upload.xlsx and mit_solve_confirmed_matches.xlsx
-# # TODO make sure the correct files are being uploaded - think wrong ones are right now
-# @app.server.route('/download_all/')
-# def download_all():
-#     if 
-#     zipf = zipfile.ZipFile('app/MIT_Solve_Excel_Files.zip','w', zipfile.ZIP_DEFLATED)
-#     for root,dirs, files in os.walk('../MIT_SOLVE_downloadable_excel_files/'):
-#         for file in files:
-#             zipf.write('../MIT_SOLVE_downloadable_excel_files/'+file)
-#     zipf.write('mit_solve_confirmed_matches.xlsx')
-#     zipf.close()
-#     return send_file('MIT_Solve_Excel_Files.zip',
-#             mimetype = 'zip',
-#             attachment_filename= 'MIT_Solve_Excel_Files.zip',
-#             as_attachment = True)
-
-
-
-# This callback prints the current list of solver matches for the current selected partner
-# If there are no matches it default prints
 @app.callback(
-    dash.dependencies.Output('partner-matches-list', 'children'),
-    [dash.dependencies.Input('checkbox_confirm', 'value')],
-    [dash.dependencies.State('output_bargraph', 'clickData'),
-    dash.dependencies.State('Solver_dropdown', 'value')],
-)
-def list_matches_for_a_partner(value, clickData, solver_name):
-    '''
-    param: value (str) - defines whether there is a match between partner and solver
-    param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: a str containing the current matches for the selected mentor or a default response
-    '''
-    df = pd.read_excel('mit_solve_confirmed_matches.xlsx')
-    partners_list = df['PARTNER'].tolist()
-    solvers_list = df['SOLVER'].tolist()
-
-    # If no partner is selected
-    if clickData == None:
-        # defualt response
-        return 'You need to select a partner'
-
-    matches_list = []
-
-    # populate a list with all the solvers currently matched with the partner
-    for i in range(len(solvers_list)):
-        if partners_list[i] == str(clickData['points'][0]['label']):
-            matches_list.append(solvers_list[i])
-
-    # If match is just created add the selected solver (solver_name) to the list
-    if value == 'Confirm':
-        if solver_name not in matches_list:
-            matches_list.append(solver_name)
-
-    # If match is just deleted remove the selected solver (solver_name) from the list
-    if value == 'Denied':
-        if solver_name in matches_list:
-            matches_list.remove(solver_name)
-
-    if matches_list == []:
-        return 'no current matches for this partner'
-    else:
-        return "List of current matches for " + str(clickData['points'][0]['label']) + ": \n" + str(matches_list)
-
-
-
-
-# This method will update the table displaying more information
-# on the partner that is clicked on in the graph
-@app.callback(
-    [dash.dependencies.Output('clicked_on_partner_table', 'data'),
-    dash.dependencies.Output('clicked_on_partner_table', 'style_cell')],
-    [dash.dependencies.Input('output_bargraph', 'clickData'),
-    dash.dependencies.Input('checkbox_confirm', 'value'),
-    ])
-def display_click_data(clickData, value):
-    '''
-    param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
-    param: value (str) - defines whether there is a match between partner and solver
-    return: data (dict) - data to be displayed in the partner table
-    return: style_cell (dict) - information on how to style text color of mentor table
-    '''
-    # Check to make sure a partnere is selected
-    if clickData != None:
-        partner_name = clickData['points'][0]['label']
-        partner_data_df = pd.read_csv("../uploaded_excel_to_csv/partner_data.csv")
-        selected_partner_row_info = partner_data_df[partner_data_df['Org']==partner_name].dropna(axis='columns')
-        generate_table(selected_partner_row_info)
-        df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
-        partners_list = df['PARTNER'].tolist()
-
-        
-        # This loop counts how many matches there are for the specific partner
-        partner_matches_count = 0
-        for i in range(len(partners_list)):
-            if partners_list[i] == partner_name:
-                partner_matches_count += 1
-
-        # Pick color for color_code based on number of matches
-        # STILL A LITTLE BUGGY, DOESN'T UPDATE LIVE
-        if partner_matches_count <= 1:
-            color_code = 'green'
-        elif partner_matches_count == 2 or partner_matches_count == 3:
-            color_code = 'blue'
-        else:
-            color_code = 'red'
-
-        new_style = {
-            'whiteSpace': 'normal',
-            'height': 'auto',
-            'textAlign': 'center',
-            'font_family': 'helvetica',
-            'font_size': '20px',
-            'color' : color_code
-        }
-
-        return [selected_partner_row_info.to_dict('records'), new_style]
-    return [None, {
-        'whiteSpace': 'normal',
-        'height': 'auto',
-        'textAlign': 'center',
-        'font_family': 'helvetica',
-        'font_size': '20px',
-        }]
-
-
-# This method will update the table displaying more information
-# on the partner that is clicked on in the graph and also create the 
-# additional individual graph
-@app.callback(
-    [dash.dependencies.Output('individual_graph', 'figure'),
-    dash.dependencies.Output('individual_graph_title', 'children')],
-    [dash.dependencies.Input('output_bargraph', 'clickData'),],
-    [dash.dependencies.State('Solver_dropdown', 'value')]
+    dash.dependencies.Output('Solver_dropdown', 'options'), 
+    [dash.dependencies.Input('upload_button', 'n_clicks')]
     )
-def update_individual_graph(clickData, solver_name):
-    '''
-    param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: figure (Plotly Express Bar Chart) - individual graph of category values
-    return: children (str) - customized title for individual graph
-    '''
-    # Check to make sure a partnere is selected
-    if clickData != None:
-        # Must get value for partner compared to solver in: geo, needs, stage, challenge
-        partner_name = clickData['points'][0]['label']
+def dropdown_options(clicks):
+     
+        solver_needs_df = pd.read_csv(config['solver_location'])
+        solvers = solver_needs_df['Org'].values.tolist()
+        options = []
+        for x in solvers: 
+            single_dict = {'label': x, 'value': x }
+            options.append(single_dict)
+        return options
+ 
+# # This callback prints the current list of solver matches for the current selected partner
+# # If there are no matches it default prints
+# @app.callback(
+#     dash.dependencies.Output('partner-matches-list', 'children'),
+#     [dash.dependencies.Input('checkbox_confirm', 'value')],
+#     [dash.dependencies.State('output_bargraph', 'clickData'),
+#     dash.dependencies.State('Solver_dropdown', 'value')],
+# )
+# def list_matches_for_a_partner(value, clickData, solver_name):
+#     '''
+#     param: value (str) - defines whether there is a match between partner and solver
+#     param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
+#     param: solver_name (str) - name of the selected solver from the dropdown menu
+#     return: a str containing the current matches for the selected mentor or a default response
+#     '''
+#     df = pd.read_excel('mit_solve_confirmed_matches.xlsx')
+#     partners_list = df['PARTNER'].tolist()
+#     solvers_list = df['SOLVER'].tolist()
 
-        geo_df = pd.read_csv("../unused_files/excel_to_csv/geo_match.csv")
-        geo_value = float(geo_df[geo_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
+#     # If no partner is selected
+#     if clickData == None:
+#         # defualt response
+#         return 'You need to select a partner'
+
+#     matches_list = []
+
+#     # populate a list with all the solvers currently matched with the partner
+#     for i in range(len(solvers_list)):
+#         if partners_list[i] == str(clickData['points'][0]['label']):
+#             matches_list.append(solvers_list[i])
+
+#     # If match is just created add the selected solver (solver_name) to the list
+#     if value == 'Confirm':
+#         if solver_name not in matches_list:
+#             matches_list.append(solver_name)
+
+#     # If match is just deleted remove the selected solver (solver_name) from the list
+#     if value == 'Denied':
+#         if solver_name in matches_list:
+#             matches_list.remove(solver_name)
+
+#     if matches_list == []:
+#         return 'no current matches for this partner'
+#     else:
+#         return "List of current matches for " + str(clickData['points'][0]['label']) + ": \n" + str(matches_list)
+
+
+
+
+# # This method will update the table displaying more information
+# # on the partner that is clicked on in the graph
+# @app.callback(
+#     [dash.dependencies.Output('clicked_on_partner_table', 'data'),
+#     dash.dependencies.Output('clicked_on_partner_table', 'style_cell')],
+#     [dash.dependencies.Input('output_bargraph', 'clickData'),
+#     dash.dependencies.Input('checkbox_confirm', 'value'),
+#     ])
+# def display_click_data(clickData, value):
+#     '''
+#     param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
+#     param: value (str) - defines whether there is a match between partner and solver
+#     return: data (dict) - data to be displayed in the partner table
+#     return: style_cell (dict) - information on how to style text color of mentor table
+#     '''
+#     # Check to make sure a partnere is selected
+#     if clickData != None:
+#         partner_name = clickData['points'][0]['label']
+#         partner_data_df = pd.read_csv("../uploaded_excel_to_csv/partner_data.csv")
+#         selected_partner_row_info = partner_data_df[partner_data_df['Org']==partner_name].dropna(axis='columns')
+#         generate_table(selected_partner_row_info)
+#         df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
+#         partners_list = df['PARTNER'].tolist()
+
         
-        needs_df = pd.read_csv("../unused_files/excel_to_csv/needs_match.csv")
-        needs_value = float(needs_df[needs_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
+#         # This loop counts how many matches there are for the specific partner
+#         partner_matches_count = 0
+#         for i in range(len(partners_list)):
+#             if partners_list[i] == partner_name:
+#                 partner_matches_count += 1
 
-        stage_df = pd.read_csv("../unused_files/excel_to_csv/stage_match.csv")
-        stage_value = float(stage_df[stage_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
+#         # Pick color for color_code based on number of matches
+#         # STILL A LITTLE BUGGY, DOESN'T UPDATE LIVE
+#         if partner_matches_count <= 1:
+#             color_code = 'green'
+#         elif partner_matches_count == 2 or partner_matches_count == 3:
+#             color_code = 'blue'
+#         else:
+#             color_code = 'red'
 
-        challenge_df = pd.read_csv("../unused_files/excel_to_csv/challenge_match.csv")
-        challenge_value = float(challenge_df[challenge_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
+#         new_style = {
+#             'whiteSpace': 'normal',
+#             'height': 'auto',
+#             'textAlign': 'center',
+#             'font_family': 'helvetica',
+#             'font_size': '20px',
+#             'color' : color_code
+#         }
 
-        partner_values_dict = {'Labels': ['Challenges Score', 'Needs Score', 'Geo Score * Stage Score',
-        'Geo Score', 'Stage Score'], 'Scores': [10*challenge_value, needs_value, 100*geo_value*stage_value,
-        10*geo_value, 10*stage_value]}
+#         return [selected_partner_row_info.to_dict('records'), new_style]
+#     return [None, {
+#         'whiteSpace': 'normal',
+#         'height': 'auto',
+#         'textAlign': 'center',
+#         'font_family': 'helvetica',
+#         'font_size': '20px',
+#         }]
 
-        ind_fig = px.bar(partner_values_dict, x='Scores', y='Labels')
-        return_string = "Individual Graph for '" + str(partner_name) + "'"
+
+# # This method will update the table displaying more information
+# # on the partner that is clicked on in the graph and also create the 
+# # additional individual graph
+# @app.callback(
+#     [dash.dependencies.Output('individual_graph', 'figure'),
+#     dash.dependencies.Output('individual_graph_title', 'children')],
+#     [dash.dependencies.Input('output_bargraph', 'clickData'),],
+#     [dash.dependencies.State('Solver_dropdown', 'value')]
+#     )
+# def update_individual_graph(clickData, solver_name):
+#     '''
+#     param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
+#     param: solver_name (str) - name of the selected solver from the dropdown menu
+#     return: figure (Plotly Express Bar Chart) - individual graph of category values
+#     return: children (str) - customized title for individual graph
+#     '''
+#     # Check to make sure a partnere is selected
+#     if clickData != None:
+#         # Must get value for partner compared to solver in: geo, needs, stage, challenge
+#         partner_name = clickData['points'][0]['label']
+
+#         geo_df = pd.read_csv("../unused_files/excel_to_csv/geo_match.csv")
+#         geo_value = float(geo_df[geo_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
         
-        return [ind_fig, return_string]
+#         needs_df = pd.read_csv("../unused_files/excel_to_csv/needs_match.csv")
+#         needs_value = float(needs_df[needs_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
+
+#         stage_df = pd.read_csv("../unused_files/excel_to_csv/stage_match.csv")
+#         stage_value = float(stage_df[stage_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
+
+#         challenge_df = pd.read_csv("../unused_files/excel_to_csv/challenge_match.csv")
+#         challenge_value = float(challenge_df[challenge_df["Partners\Solvers"]==partner_name].iloc[0][solver_name])
+
+#         partner_values_dict = {'Labels': ['Challenges Score', 'Needs Score', 'Geo Score * Stage Score',
+#         'Geo Score', 'Stage Score'], 'Scores': [10*challenge_value, needs_value, 100*geo_value*stage_value,
+#         10*geo_value, 10*stage_value]}
+
+#         ind_fig = px.bar(partner_values_dict, x='Scores', y='Labels')
+#         return_string = "Individual Graph for '" + str(partner_name) + "'"
+        
+#         return [ind_fig, return_string]
     
-    figure={'data': []}
-    return [figure, '']
+#     figure={'data': []}
+#     return [figure, '']
 
-# This callback fills the textboxes with weights of the current solver/partner pairing selected
-@app.callback(
-    [dash.dependencies.Output('geo-weight', 'value'),
-    dash.dependencies.Output('needs-weight', 'value'),
-    dash.dependencies.Output('challenges-weight', 'value'),
-    dash.dependencies.Output('stage-weight', 'value'),],
-    [dash.dependencies.Input('Solver_dropdown', 'value'),
-    dash.dependencies.Input('output_bargraph', 'clickData')]
-)
-def fill_weight_text_boxes(solver_name, clickData):
-    '''
-    param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: geo-weight value (str) - the text that will be displayed in the geo weight textbox
-    return: needs-weight value (str) - the text that will be displayed in the needs weight textbox
-    return: challenges-weight value (str) - the text that will be displayed in the challenges weight textbox
-    return: stage-weight value (str) - the text that will be displayed in the stage weight textbox
-    '''
-    df = pd.read_excel('../solver_partner_weights.xlsx')
-    if clickData != None:
-        partner_name = clickData['points'][0]['label']
-        weights = str(df[df["Org_y"]==partner_name].iloc[0][solver_name])
+# # This callback fills the textboxes with weights of the current solver/partner pairing selected
+# @app.callback(
+#     [dash.dependencies.Output('geo-weight', 'value'),
+#     dash.dependencies.Output('needs-weight', 'value'),
+#     dash.dependencies.Output('challenges-weight', 'value'),
+#     dash.dependencies.Output('stage-weight', 'value'),],
+#     [dash.dependencies.Input('Solver_dropdown', 'value'),
+#     dash.dependencies.Input('output_bargraph', 'clickData')]
+# )
+# def fill_weight_text_boxes(solver_name, clickData):
+#     '''
+#     param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
+#     param: solver_name (str) - name of the selected solver from the dropdown menu
+#     return: geo-weight value (str) - the text that will be displayed in the geo weight textbox
+#     return: needs-weight value (str) - the text that will be displayed in the needs weight textbox
+#     return: challenges-weight value (str) - the text that will be displayed in the challenges weight textbox
+#     return: stage-weight value (str) - the text that will be displayed in the stage weight textbox
+#     '''
+#     df = pd.read_excel('../solver_partner_weights.xlsx')
+#     if clickData != None:
+#         partner_name = clickData['points'][0]['label']
+#         weights = str(df[df["Org_y"]==partner_name].iloc[0][solver_name])
 
-        # Splicing out the specific weights from the comment box
-        # These are all indexes of commas within the weights string
-        first_comma = weights.index(',')                      
-        second_comma = weights[(first_comma + 1):].index(',') + first_comma + 1
-        third_comma = weights[(second_comma + 1):].index(',') + second_comma + 1
+#         # Splicing out the specific weights from the comment box
+#         # These are all indexes of commas within the weights string
+#         first_comma = weights.index(',')                      
+#         second_comma = weights[(first_comma + 1):].index(',') + first_comma + 1
+#         third_comma = weights[(second_comma + 1):].index(',') + second_comma + 1
 
-        # Use the indexes of the commas to read in the weights
-        geo_weight = weights[0:first_comma]
-        needs_weight = weights[(first_comma+1):second_comma]
-        challenges_weight = weights[(second_comma+1):third_comma]
-        stage_weight = weights[(third_comma+1):]
+#         # Use the indexes of the commas to read in the weights
+#         geo_weight = weights[0:first_comma]
+#         needs_weight = weights[(first_comma+1):second_comma]
+#         challenges_weight = weights[(second_comma+1):third_comma]
+#         stage_weight = weights[(third_comma+1):]
 
-        return ['weight for geo: [' + geo_weight + ']', 'weight for needs: [' + needs_weight + ']', 
-        'weight for challenge: [' + challenges_weight + ']', 'weight for stage: [' + stage_weight + ']']
-    return ['Select Partner Please', 'Select Partner Please', 'Select Partner Please', 'Select Partner Please']
+#         return ['weight for geo: [' + geo_weight + ']', 'weight for needs: [' + needs_weight + ']', 
+#         'weight for challenge: [' + challenges_weight + ']', 'weight for stage: [' + stage_weight + ']']
+#     return ['Select Partner Please', 'Select Partner Please', 'Select Partner Please', 'Select Partner Please']
     
 
 
-# This callback edits weights in the excel sheet when submit button pressed
-# TODO: currently the 'successfully edited...' message doesn't go away when a new 
-# pairing is selected
-@app.callback(
-    [dash.dependencies.Output('confirmation-text', 'children'),],
-    [dash.dependencies.Input('submit-val', 'n_clicks')],
-    [dash.dependencies.State('geo-weight', 'value'),
-    dash.dependencies.State('needs-weight', 'value'),
-    dash.dependencies.State('challenges-weight', 'value'),
-    dash.dependencies.State('stage-weight', 'value'),
-    dash.dependencies.State('Solver_dropdown', 'value'),
-    dash.dependencies.State('output_bargraph', 'clickData'),
-    dash.dependencies.State('confirmation-text', 'children')
-    ]
-)
-def edit_excel_sheet_with_new_weights(button_children, 
-    new_geo_weight, new_needs_weight, new_challenges_weight,
-    new_stage_weight, solver_name, clickData, 
-    current_confirmation_text):
-    '''
-    param: button_children (int) - number of clicks on button -> just used to activate callback and not used in code
-    param: new_geo_weight (str) - entire text within geo weight textbox
-    param: new_needs_weight (str) - entire text within needs weight textbox
-    param: new_challenges_weight (str) - entire text within challenges weight textbox
-    param: new_stage_weight (str) - entire text within stage weight textbox
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
-    param: current_confirmation_text (str) - editing success message located underneath submit button on dashboard
-    return: children (str) - customized edit success response message
-    '''
-    if clickData != None:
-        print('edited')
-        partner_name = clickData['points'][0]['label']
+# # This callback edits weights in the excel sheet when submit button pressed
+# # TODO: currently the 'successfully edited...' message doesn't go away when a new 
+# # pairing is selected
+# @app.callback(
+#     [dash.dependencies.Output('confirmation-text', 'children'),],
+#     [dash.dependencies.Input('submit-val', 'n_clicks')],
+#     [dash.dependencies.State('geo-weight', 'value'),
+#     dash.dependencies.State('needs-weight', 'value'),
+#     dash.dependencies.State('challenges-weight', 'value'),
+#     dash.dependencies.State('stage-weight', 'value'),
+#     dash.dependencies.State('Solver_dropdown', 'value'),
+#     dash.dependencies.State('output_bargraph', 'clickData'),
+#     dash.dependencies.State('confirmation-text', 'children')
+#     ]
+# )
+# def edit_excel_sheet_with_new_weights(button_children, 
+#     new_geo_weight, new_needs_weight, new_challenges_weight,
+#     new_stage_weight, solver_name, clickData, 
+#     current_confirmation_text):
+#     '''
+#     param: button_children (int) - number of clicks on button -> just used to activate callback and not used in code
+#     param: new_geo_weight (str) - entire text within geo weight textbox
+#     param: new_needs_weight (str) - entire text within needs weight textbox
+#     param: new_challenges_weight (str) - entire text within challenges weight textbox
+#     param: new_stage_weight (str) - entire text within stage weight textbox
+#     param: solver_name (str) - name of the selected solver from the dropdown menu
+#     param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
+#     param: current_confirmation_text (str) - editing success message located underneath submit button on dashboard
+#     return: children (str) - customized edit success response message
+#     '''
+#     if clickData != None:
+#         print('edited')
+#         partner_name = clickData['points'][0]['label']
 
-        file = '../solver_partner_weights.xlsx'
-        wb = openpyxl.load_workbook(filename=file)
-        ws = wb.get_sheet_by_name('Sheet1')
+#         file = '../solver_partner_weights.xlsx'
+#         wb = openpyxl.load_workbook(filename=file)
+#         ws = wb.get_sheet_by_name('Sheet1')
 
-        # create new string to put in excel sheet
-        new_weights = new_geo_weight[17:-1] + ',' + new_needs_weight[19:-1] + ',' + new_challenges_weight[23:-1] + ',' + new_stage_weight[19:-1]
-
-
-        xls_file = pd.ExcelFile(file)
-        df = xls_file.parse('Sheet1')
-        # list of solvers from hard coded 'total_score.xlsx'
-        Solvers = list(df.columns[1:])
-        # List of partners from hard coded 'total_score.xlsx'
-        Partners = list(df["Org_y"])
-
-        # overwrite the old weights with new ones
-        partner_row_num = Partners.index(partner_name) + 2
-        solver_col_num = Solvers.index(solver_name) + 2
-
-        ws.cell(row=partner_row_num, column=solver_col_num).value = new_weights
-        # Save the workbook
-        wb.save(file)
-        return ['Weights edited for pairing of ' + partner_name + " and " + solver_name]
-    return ['']
+#         # create new string to put in excel sheet
+#         new_weights = new_geo_weight[17:-1] + ',' + new_needs_weight[19:-1] + ',' + new_challenges_weight[23:-1] + ',' + new_stage_weight[19:-1]
 
 
-# Callback that either checks off or leaves blank the checkbox when a new solver or
-# partneris selected
-@app.callback(
-    dash.dependencies.Output('checkbox_confirm', 'value'),
-    [dash.dependencies.Input('Solver_dropdown', 'value'),
-    dash.dependencies.Input('output_bargraph', 'clickData')]
-)
-def check_or_uncheck_checkbox(solver_name, clickData):
-    '''
-    param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: checkbox_confirm value (str) - status of mentor/solver pairing
-    '''
-    df = pd.read_excel('mit_solve_confirmed_matches.xlsx')
-    partners_list = df['PARTNER'].tolist()
-    solvers_list = df['SOLVER'].tolist()
+#         xls_file = pd.ExcelFile(file)
+#         df = xls_file.parse('Sheet1')
+#         # list of solvers from hard coded 'total_score.xlsx'
+#         Solvers = list(df.columns[1:])
+#         # List of partners from hard coded 'total_score.xlsx'
+#         Partners = list(df["Org_y"])
 
-    # check to make sure there is a partner selected
-    if clickData == None:
-            return 'You need to select a partner'
+#         # overwrite the old weights with new ones
+#         partner_row_num = Partners.index(partner_name) + 2
+#         solver_col_num = Solvers.index(solver_name) + 2
 
-    # iterate through list of solvers to find currently selected solver (solver_name)
-    for i in range(len(solvers_list)):
-        if solvers_list[i] == solver_name:
-            # if the solver name is found check if its partner is the currently selected partner
-            if partners_list[i] == clickData['points'][0]['label']:
-                # This is  a match 
-                return 'Confirm'
-
-    # If we get here this is not a match
-    return 'Denied'
+#         ws.cell(row=partner_row_num, column=solver_col_num).value = new_weights
+#         # Save the workbook
+#         wb.save(file)
+#         return ['Weights edited for pairing of ' + partner_name + " and " + solver_name]
+#     return ['']
 
 
-# Callback that adds and deletes matches to the 'mit_solve_confirmed_matches.xlsx'
-@app.callback(
-    dash.dependencies.Output('hidden-div', 'children'),
-    [dash.dependencies.Input('checkbox_confirm', 'value')],
-    [dash.dependencies.State('Solver_dropdown', 'value'),
-    dash.dependencies.State('output_bargraph', 'clickData')]
-    )
-def add_confirmed_match(checkbox, solver_name, clickData):
-    '''
-    param: checkbox (str) - defines whether there is a match between partner and solver
-    param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: children (str) - irrelavent output, will never be printed out and is used to 
-    comply with needing an Output for every callback
-    '''
-    # Check if we are adding a match
-    if checkbox == 'Confirm':
-        if clickData == None:
-            return 'You need to select a partner'
-        else:
-            df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
-            partners_list = df['PARTNER'].tolist()
-            solvers_list = df['SOLVER'].tolist()
+# # Callback that either checks off or leaves blank the checkbox when a new solver or
+# # partneris selected
+# @app.callback(
+#     dash.dependencies.Output('checkbox_confirm', 'value'),
+#     [dash.dependencies.Input('Solver_dropdown', 'value'),
+#     dash.dependencies.Input('output_bargraph', 'clickData')]
+# )
+# def check_or_uncheck_checkbox(solver_name, clickData):
+#     '''
+#     param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
+#     param: solver_name (str) - name of the selected solver from the dropdown menu
+#     return: checkbox_confirm value (str) - status of mentor/solver pairing
+#     '''
+#     df = pd.read_excel('mit_solve_confirmed_matches.xlsx')
+#     partners_list = df['PARTNER'].tolist()
+#     solvers_list = df['SOLVER'].tolist()
 
-            # checks if already a match
-            for i in range(len(solvers_list)):
-                if solvers_list[i] == solver_name:
-                    if partners_list[i] == clickData['points'][0]['label']:
-                        # This is already a match 
-                        return None
+#     # check to make sure there is a partner selected
+#     if clickData == None:
+#             return 'You need to select a partner'
 
-            file = 'mit_solve_confirmed_matches.xlsx'
-            wb = openpyxl.load_workbook(filename=file)
-            ws = wb.get_sheet_by_name('Sheet1')
+#     # iterate through list of solvers to find currently selected solver (solver_name)
+#     for i in range(len(solvers_list)):
+#         if solvers_list[i] == solver_name:
+#             # if the solver name is found check if its partner is the currently selected partner
+#             if partners_list[i] == clickData['points'][0]['label']:
+#                 # This is  a match 
+#                 return 'Confirm'
 
-            # count number of matches 
-            # start the count at 1 to account for this match not being added to the sheet yet
-            matches_count_for_partner = 1
-            for i in range(len(partners_list)):
-                if partners_list[i] == clickData['points'][0]['label']:
-                    matches_count_for_partner += 1
+#     # If we get here this is not a match
+#     return 'Denied'
+
+
+# # Callback that adds and deletes matches to the 'mit_solve_confirmed_matches.xlsx'
+# @app.callback(
+#     dash.dependencies.Output('hidden-div', 'children'),
+#     [dash.dependencies.Input('checkbox_confirm', 'value')],
+#     [dash.dependencies.State('Solver_dropdown', 'value'),
+#     dash.dependencies.State('output_bargraph', 'clickData')]
+#     )
+# def add_confirmed_match(checkbox, solver_name, clickData):
+#     '''
+#     param: checkbox (str) - defines whether there is a match between partner and solver
+#     param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
+#     param: solver_name (str) - name of the selected solver from the dropdown menu
+#     return: children (str) - irrelavent output, will never be printed out and is used to 
+#     comply with needing an Output for every callback
+#     '''
+#     # Check if we are adding a match
+#     if checkbox == 'Confirm':
+#         if clickData == None:
+#             return 'You need to select a partner'
+#         else:
+#             df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
+#             partners_list = df['PARTNER'].tolist()
+#             solvers_list = df['SOLVER'].tolist()
+
+#             # checks if already a match
+#             for i in range(len(solvers_list)):
+#                 if solvers_list[i] == solver_name:
+#                     if partners_list[i] == clickData['points'][0]['label']:
+#                         # This is already a match 
+#                         return None
+
+#             file = 'mit_solve_confirmed_matches.xlsx'
+#             wb = openpyxl.load_workbook(filename=file)
+#             ws = wb.get_sheet_by_name('Sheet1')
+
+#             # count number of matches 
+#             # start the count at 1 to account for this match not being added to the sheet yet
+#             matches_count_for_partner = 1
+#             for i in range(len(partners_list)):
+#                 if partners_list[i] == clickData['points'][0]['label']:
+#                     matches_count_for_partner += 1
                     
-            # insert the partner and solver names, as well as datetime and number of matches
-            time_right_now = datetime.datetime.now()
-            ws['A' + str(COUNT_OF_MATCHES + 2)] = str(clickData['points'][0]['label'])
-            ws['B' + str(COUNT_OF_MATCHES + 2)] = str(solver_name)
-            ws['C' + str(COUNT_OF_MATCHES + 2)] = str(time_right_now)
-            ws['D' + str(COUNT_OF_MATCHES + 2)] = str(matches_count_for_partner)
-            # Save the workbook
-            wb.save(file)
-            #increment amount of total matches
-            increment_count_of_matches()
-            return ''
+#             # insert the partner and solver names, as well as datetime and number of matches
+#             time_right_now = datetime.datetime.now()
+#             ws['A' + str(COUNT_OF_MATCHES + 2)] = str(clickData['points'][0]['label'])
+#             ws['B' + str(COUNT_OF_MATCHES + 2)] = str(solver_name)
+#             ws['C' + str(COUNT_OF_MATCHES + 2)] = str(time_right_now)
+#             ws['D' + str(COUNT_OF_MATCHES + 2)] = str(matches_count_for_partner)
+#             # Save the workbook
+#             wb.save(file)
+#             #increment amount of total matches
+#             increment_count_of_matches()
+#             return ''
 
-    # Check if we are removing a match
-    if checkbox == 'Denied':
-        if clickData == None:
-            return 'No partner selected'
-        else:
-            df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
-            partners_list = df['PARTNER'].tolist()
-            solvers_list = df['SOLVER'].tolist()
+#     # Check if we are removing a match
+#     if checkbox == 'Denied':
+#         if clickData == None:
+#             return 'No partner selected'
+#         else:
+#             df = pd.read_excel('mit_solve_confirmed_matches.xlsx') 
+#             partners_list = df['PARTNER'].tolist()
+#             solvers_list = df['SOLVER'].tolist()
 
-            # checks if already a match
-            for i in range(len(solvers_list)):
-                if solvers_list[i] == solver_name:
-                    if partners_list[i] == clickData['points'][0]['label']:
-                        # This match needs to be deleted
+#             # checks if already a match
+#             for i in range(len(solvers_list)):
+#                 if solvers_list[i] == solver_name:
+#                     if partners_list[i] == clickData['points'][0]['label']:
+#                         # This match needs to be deleted
 
-                        file = 'mit_solve_confirmed_matches.xlsx'
-                        wb = openpyxl.load_workbook(filename=file)
-                        # Select the right sheet
-                        ws = wb.get_sheet_by_name('Sheet1')
-                        # insert the partner and solver name, datetime, and number of matches
-                        ws['A' + str(i + 2)] = str('')
-                        ws['B' + str(i + 2)] = str('')
-                        ws['C' + str(i + 2)] = str('')
-                        ws['D' + str(i + 2)] = str('')
-                        # Save the workbook
-                        wb.save(file)
-                        # NEED TO DECREMENT NUMBER OF MATCHES HERE
-                        # LOGIC MAY NEED WORK TOO, NOT SURE IF JUST DECREMENTING IS THE RIGHT MOVE
-
-
-# This method updates the table displaying more information on a solver
-# everytime a new solver is selected from the dropdown
-@app.callback(
-    dash.dependencies.Output('selected_solver_table', 'data'),
-    [dash.dependencies.Input('Solver_dropdown', 'value')])
-def update_solver_table(value):
-    '''
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: data (dict) - a dictionary containing data that will populate the solver table
-    '''
-    # Checks if new files have been uploaded yet instead of hard coded
-    try:
-        solver_needs_df = pd.read_csv("../uploaded_excel_to_csv/solver_team_data.csv")
-        selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
-        generate_table(selected_solver_row_info)  
-        return selected_solver_row_info.to_dict('records')
-    # Uses the hard coded Solver info if no files have been uploaded yet
-    except:
-        solver_needs_df = pd.read_csv("../unused_files/excel_to_csv/solver_team_data.csv")
-        selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
-        generate_table(selected_solver_row_info)  
-        return selected_solver_row_info.to_dict('records')
+#                         file = 'mit_solve_confirmed_matches.xlsx'
+#                         wb = openpyxl.load_workbook(filename=file)
+#                         # Select the right sheet
+#                         ws = wb.get_sheet_by_name('Sheet1')
+#                         # insert the partner and solver name, datetime, and number of matches
+#                         ws['A' + str(i + 2)] = str('')
+#                         ws['B' + str(i + 2)] = str('')
+#                         ws['C' + str(i + 2)] = str('')
+#                         ws['D' + str(i + 2)] = str('')
+#                         # Save the workbook
+#                         wb.save(file)
+#                         # NEED TO DECREMENT NUMBER OF MATCHES HERE
+#                         # LOGIC MAY NEED WORK TOO, NOT SURE IF JUST DECREMENTING IS THE RIGHT MOVE
 
 
-# This method updates the graph when a new solver is selected from the dropdown
-@app.callback(
-    dash.dependencies.Output('output_bargraph', 'figure'),
-    [dash.dependencies.Input('Solver_dropdown', 'value')])
-def update_graph_from_solver_dropdown(value):
-    '''
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: figure (Plotly Express Bar Chart) - the graph for total scores displayed on the dashboard
-    '''
-    # Checks if new files have been uploaded yet instead of hard coded
-    try:
-        xls_file_total_score = pd.ExcelFile('MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx')
-        uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
-    # Uses the hard coded files if no files have been uploaded yet
-    except:
-        uploaded_df_total_score = df_total_score
-    # Sort and crop top 5 values for new selected solver
-    total_fig = px.bar(uploaded_df_total_score.sort_values(value, ascending=False)[:5], x=value, 
-    y="Org_y", labels = {'Org_y':'PARTNER',value:'Total Score'})
-    total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
-    return total_fig
+# # This method updates the table displaying more information on a solver
+# # everytime a new solver is selected from the dropdown
+# @app.callback(
+#     dash.dependencies.Output('selected_solver_table', 'data'),
+#     [dash.dependencies.Input('Solver_dropdown', 'value')])
+# def update_solver_table(value):
+#     '''
+#     param: solver_name (str) - name of the selected solver from the dropdown menu
+#     return: data (dict) - a dictionary containing data that will populate the solver table
+#     '''
+#     # Checks if new files have been uploaded yet instead of hard coded
+#     try:
+#         solver_needs_df = pd.read_csv("../uploaded_excel_to_csv/solver_team_data.csv")
+#         selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
+#         generate_table(selected_solver_row_info)  
+#         return selected_solver_row_info.to_dict('records')
+#     # Uses the hard coded Solver info if no files have been uploaded yet
+#     except:
+#         solver_needs_df = pd.read_csv("../unused_files/excel_to_csv/solver_team_data.csv")
+#         selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
+#         generate_table(selected_solver_row_info)  
+#         return selected_solver_row_info.to_dict('records')
+
+
+# # This method updates the graph when a new solver is selected from the dropdown
+# @app.callback(
+#     dash.dependencies.Output('output_bargraph', 'figure'),
+#     [dash.dependencies.Input('Solver_dropdown', 'value')])
+# def update_graph_from_solver_dropdown(value):
+#     '''
+#     param: solver_name (str) - name of the selected solver from the dropdown menu
+#     return: figure (Plotly Express Bar Chart) - the graph for total scores displayed on the dashboard
+#     '''
+#     # Checks if new files have been uploaded yet instead of hard coded
+#     try:
+#         xls_file_total_score = pd.ExcelFile('MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx')
+#         uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
+#     # Uses the hard coded files if no files have been uploaded yet
+#     except:
+#         uploaded_df_total_score = df_total_score
+#     # Sort and crop top 5 values for new selected solver
+#     total_fig = px.bar(uploaded_df_total_score.sort_values(value, ascending=False)[:5], x=value, 
+#     y="Org_y", labels = {'Org_y':'PARTNER',value:'Total Score'})
+#     total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
+#     return total_fig
 
 
 
 
-# This callback will create a new bar chart with the data from the uploaded excel
-# files instead of the preloaded old excel files
-@app.callback(
-    dash.dependencies.Output('Solver_dropdown', 'value'),
-    [dash.dependencies.Input('upload-data', 'contents')],
-)
-def point_graph_to_uploaded_files(contents):
-    '''
-    param: contents - all of the files uploaded
-    return: solver_name (str) - name of the selected solver from the dropdown menu
-    '''
-    try:
-        # create new df from uploaded file
-        xls_file_total_score = pd.ExcelFile('MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx')
-        uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
-        # Create new graph with uploaded data instead of hardcoded
-        new_solvers = list(uploaded_df_total_score.columns[1:])
-        # Returns a different solver its obvious whether this worked or not
-        return new_solvers[8]
-    except:
-        return Solvers[0]
+# # This callback will create a new bar chart with the data from the uploaded excel
+# # files instead of the preloaded old excel files
+# @app.callback(
+#     dash.dependencies.Output('Solver_dropdown', 'value'),
+#     [dash.dependencies.Input('upload-data', 'contents')],
+# )
+# def point_graph_to_uploaded_files(contents):
+#     '''
+#     param: contents - all of the files uploaded
+#     return: solver_name (str) - name of the selected solver from the dropdown menu
+#     '''
+#     try:
+#         # create new df from uploaded file
+#         xls_file_total_score = pd.ExcelFile('MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx')
+#         uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
+#         # Create new graph with uploaded data instead of hardcoded
+#         new_solvers = list(uploaded_df_total_score.columns[1:])
+#         # Returns a different solver its obvious whether this worked or not
+#         return new_solvers[8]
+#     except:
+#         return Solvers[0]
 
 
 

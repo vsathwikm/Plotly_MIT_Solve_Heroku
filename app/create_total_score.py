@@ -9,13 +9,13 @@ def create_total_score_excel(export_path):
     '''
 
     # Mentor data
-    partners_df = zebra.csv_to_df("partner_data.csv")
+    partners_df = zebra.csv_to_df(export_path+"partner_data.csv")
     # filled nan with 0 
     partners_df = partners_df.fillna(0)
     type(partners_df["Org"])
 
     # Solver data
-    solver_df = zebra.csv_to_df("solver_team_data.csv")
+    solver_df = zebra.csv_to_df(export_path+"solver_team_data.csv")
     # filled nan with 0 
     solver_df = solver_df.fillna(0)
 
@@ -63,6 +63,6 @@ def create_total_score_excel(export_path):
 
     # Export to total_score.xlsx
     # total_score.to_excel("MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx")
-    total_score.to_excel("total_score_from_upload.xlsx")
+    total_score.to_excel(export_path+"/total_score_from_upload.xlsx")
 
     return total_score

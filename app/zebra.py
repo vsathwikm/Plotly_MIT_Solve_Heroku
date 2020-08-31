@@ -10,7 +10,7 @@ def csv_to_df(file_name):
     :return: DataFrame containing the data from file_name  
     :rtype: pandas.DataFrame
     """
-    path_csv_folder = 'uploaded_excel_to_csv/'    
+    path_csv_folder = ''    
     csv_df = pd.read_csv(path_csv_folder+file_name)
     return csv_df 
 
