@@ -778,7 +778,7 @@ def fill_weight_text_boxes(solver_name, clickData):
         weights_matrix = pd.read_excel(config['total_score_location'])
         for col in weights_matrix:
             if not col == 'Org_y':
-                weights_matrix[col].values[:] = 0
+                weights_matrix[col].values[:] = {'label':0, 'ere':3}
         weights_matrix.to_excel(config['weights'])
     
     df = pd.read_excel(config['weights'])
@@ -810,70 +810,70 @@ def fill_weight_text_boxes(solver_name, clickData):
     return ['Select Partner Please', 'Select Partner Please', 'Select Partner Please', 'Select Partner Please']
     
 
-# @app.callback(
-#     [dash.dependencies.Output('confirmation-text', 'children'),],
-#     [dash.dependencies.Input('submit-val', 'n_clicks')],
-#     [dash.dependencies.State('geo-weight', 'value'),
-#     dash.dependencies.State('needs-weight', 'value'),
-#     dash.dependencies.State('challenges-weight', 'value'),
-#     dash.dependencies.State('stage-weight', 'value'),
-#     dash.dependencies.State('solver-dropdown', 'value'),
-#     dash.dependencies.State('output_bargraph', 'clickData'),
-#     dash.dependencies.State('confirmation-text', 'children')
-#     ]
-# )    
-# def edit_excel_sheet_with_new_weights(button_children, 
-#     new_geo_weight, new_needs_weight, new_challenges_weight,
-#     new_stage_weight, solver_name, clickData, 
-#     current_confirmation_text):
-#     '''
-#     param: button_children (int) - number of clicks on button -> just used to activate callback and not used in code
-#     param: new_geo_weight (str) - entire text within geo weight textbox
-#     param: new_needs_weight (str) - entire text within needs weight textbox
-#     param: new_challenges_weight (str) - entire text within challenges weight textbox
-#     param: new_stage_weight (str) - entire text within stage weight textbox
-#     param: solver_name (str) - name of the selected solver from the dropdown menu
-#     param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
-#     param: current_confirmation_text (str) - editing success message located underneath submit button on dashboard
-#     return: children (str) - customized edit success response message
-#     '''
+@app.callback(
+    [dash.dependencies.Output('confirmation-text', 'children'),],
+    [dash.dependencies.Input('submit-val', 'n_clicks')],
+    [dash.dependencies.State('geo-weight', 'value'),
+    dash.dependencies.State('needs-weight', 'value'),
+    dash.dependencies.State('challenges-weight', 'value'),
+    dash.dependencies.State('stage-weight', 'value'),
+    dash.dependencies.State('solver-dropdown', 'value'),
+    dash.dependencies.State('output_bargraph', 'clickData'),
+    dash.dependencies.State('confirmation-text', 'children')
+    ]
+)    
+def edit_excel_sheet_with_new_weights(button_children, 
+    new_geo_weight, new_needs_weight, new_challenges_weight,
+    new_stage_weight, solver_name, clickData, 
+    current_confirmation_text):
+    '''
+    param: button_children (int) - number of clicks on button -> just used to activate callback and not used in code
+    param: new_geo_weight (str) - entire text within geo weight textbox
+    param: new_needs_weight (str) - entire text within needs weight textbox
+    param: new_challenges_weight (str) - entire text within challenges weight textbox
+    param: new_stage_weight (str) - entire text within stage weight textbox
+    param: solver_name (str) - name of the selected solver from the dropdown menu
+    param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
+    param: current_confirmation_text (str) - editing success message located underneath submit button on dashboard
+    return: children (str) - customized edit success response message
+    '''
  
-#     if clickData != None:
-#         print('edited')
-#         partner_name = clickData['points'][0]['y']
+    if clickData != None:
+        print('edited')
+        partner_name = clickData['points'][0]['y']
 
-#         file = config['weights']
-#         wb = pd.read_excel(file)
-#         # ws = wb.get_sheet_by_name('Sheet1')
+        file = config['weights']
+        wb = pd.read_excel(file)
+        # ws = wb.get_sheet_by_name('Sheet1')
 
-#         # create new string to put in excel sheet
-#         new_weights = str(new_geo_weight) + ',' + str(new_needs_weight) + ',' + str(new_challenges_weight)+ ',' + str(new_stage_weight)
-#         print("new weights",  new_weights)
-#         # print(wb[wb['Org_y'] == partner_name].loc[solver_name])
-#         print(wb[wb['Org_y'] == partner_name])
-#         print(wb[wb['Org_y'] == partner_name].loc[solver_name])
-#         print("done")
-#         wb[wb['Org_y'] == partner_name][solver_name] = "duck"
+        # create new string to put in excel sheet
+        new_weights = str(new_geo_weight) + ',' + str(new_needs_weight) + ',' + str(new_challenges_weight)+ ',' + str(new_stage_weight)
+        print("new weights",  new_weights)
+        # print(wb[wb['Org_y'] == partner_name].loc[solver_name])
+        print(wb[wb['Org_y'] == partner_name])
+        print(wb[wb['Org_y'] == partner_name].loc[solver_name])
+        print("done")
+        wb[wb['Org_y'] == partner_name][solver_name] = {'label':0, 'ere':3}
         
-#         wb.to_excel(config['weights'], index=False)
-#         # xls_file = pd.ExcelFile(file)
-#         # df = xls_file.parse('Sheet1')
-#         # # list of solvers from hard coded 'total_score.xlsx'
-#         # Solvers = list(df.columns[1:])
-#         # # List of partners from hard coded 'total_score.xlsx'
-#         # Partners = list(df["Org_y"])
+        wb.to_excel(config['weights'], index=False)
+        # xls_file = pd.ExcelFile(file)
+        # df = xls_file.parse('Sheet1')
+        # # list of solvers from hard coded 'total_score.xlsx'
+        # Solvers = list(df.columns[1:])
+        # # List of partners from hard coded 'total_score.xlsx'
+        # Partners = list(df["Org_y"])
 
 
-#         # # overwrite the old weights with new ones
-#         # partner_row_num = Partners.index(partner_name) + 2
-#         # solver_col_num = Solvers.index(solver_name) + 2
+        # # overwrite the old weights with new ones
+        # partner_row_num = Partners.index(partner_name) + 2
+        # solver_col_num = Solvers.index(solver_name) + 2
 
-#         # ws.cell(row=partner_row_num, column=solver_col_num).value = new_weights
-#         # # Save the workbook
-#         # wb.save(file)
+        # ws.cell(row=partner_row_num, column=solver_col_num).value = new_weights
+        # # Save the workbook
+        # wb.save(file)
 
-#         return ['Weights edited for pairing of ' + partner_name + " and " + solver_name]
-#     return ['']
+        return ['Weights edited for pairing of ' + partner_name + " and " + solver_name]
+    return ['']
 
 
 
