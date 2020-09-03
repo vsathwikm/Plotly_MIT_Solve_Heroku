@@ -1,13 +1,13 @@
 import pandas as pd 
 import numpy as np 
-import zebra 
+from utils import zebra 
 import os
 
 def create_total_score_excel(export_path):
     ''' This function will create the total_score.xlsx
     sheet from the uploaded files
     '''
-
+    print("total score export_path: ", export_path)
     # Mentor data
     partners_df = zebra.csv_to_df(export_path+"partner_data.csv")
     # filled nan with 0 

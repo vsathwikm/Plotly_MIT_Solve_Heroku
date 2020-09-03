@@ -34,33 +34,12 @@ from dash.dependencies import Output, Input
 # writing to excel files
 import openpyxl
 import yaml 
-
+from dash.exceptions import PreventUpdate
+import callbacks 
 
 with open("config.yml") as config_file: 
      config = yaml.load(config_file, Loader=yaml.FullLoader)
 
-
-# for adding basic Auth 
-VALID_USERNAME_PASSWORD_PAIRS = {
-    'mit': 'solve2020'
-}
-
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-styles = {
-    'pre': {
-        'border': 'thin lightgrey solid',
-        'overflowX': 'scroll'
-    }
-}
-
-# the Flask app
-app = Flask(__name__) 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-server = app.server 
-auth = dash_auth.BasicAuth(
-    app,
-    VALID_USERNAME_PASSWORD_PAIRS
-)
 
 
 
@@ -88,671 +67,125 @@ def increment_count_of_matches():
 # hardcoded_file_total_score = pd.ExcelFile('../total_score.xlsx')
 # df_total_score = hardcoded_file_total_score.parse('Sheet1')
 
-# list of solvers from hard coded 'total_score.xlsx'
-# Solvers = list(df_total_score.columns[1:])
-# List of partners from hard coded 'total_score.xlsx'
-# Partners = list(df_total_score["Org_y"])
 
-# Creates the initial horizonatl bar graph that is displayed on the dashboard
-# total_fig = px.bar(df_total_score.sort_values(Solvers[0], ascending=False)[:5], x=Solvers[0], 
-# y="Org_y", labels = {'Org_y':'PARTNER',Solvers[0]:'Total Score'})
-# total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
-# # Format the bar graph
-# total_fig.update_layout(
-#     autosize=True,
-#     # width=700,
-#     height=500,
-#     margin=dict(
-#         l=50,
-#         r=50,
-#         b=100,
-#         t=100,
-#         pad=4
-#     )
-# )
-
-# Getting initial, hardcoded Solver Table from dropdown bar
-# solver_needs_df = pd.read_csv("../unused_files/excel_to_csv/solver_team_data.csv")
-# selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns')
-# selected_solver_row_info_list = list(solver_needs_df[solver_needs_df['Org']==Solvers[0]].dropna(axis='columns'))
-
-# Creates a dictionary of all the Solver info to put in the selected_solver_table
 selected_solver_row_list = []
-# for col in selected_solver_row_info:
-#     ind_row_dict = {}
-#     ind_row_dict["label"] = col
-#     ind_row_dict["value"] = selected_solver_row_info[col]
-#     selected_solver_row_list.append(ind_row_dict)
-
-# Getting initial, hardcoded Partner Table - will be blank initially
-# partner_data_df = pd.read_csv("../unused_files/excel_to_csv/partner_data.csv")
-# selected_partner_row_info = partner_data_df[partner_data_df['Org']==Partners[0]].dropna(axis='columns')
-# selected_partner_row_info_list = list(partner_data_df[partner_data_df['Org']==Partners[0]].dropna(axis='columns'))
-
-
 # Creates a dictionary to put all Solvers as options of drop down menu
 solver_list_dict = []
-# for solver in Solvers:
-#     ind_solver_dict = {}
-#     ind_solver_dict["label"]=solver
-#     ind_solver_dict["value"]=solver
-#     solver_list_dict.append(ind_solver_dict)
 
 # Method that generates tables
 # Used for the selected_solver_table and clicked_on_partner_table
-def generate_table(dataframe, max_rows=200):    
-    '''
-    inputs:
-    dataframe, padas df - dataframe to output to a table
-    max_rows, int - max amount of rows to print. Set at 100 to 
-    be high enough to deal with any dataframe used in this dashboard
-    '''
-    return html.Table([
-        html.Thead(
-            html.Tr([html.Th(col) for col in dataframe.columns])
-        ),
-        html.Tbody([
-            html.Tr([
-                html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
-            ]) for i in range(min(len(dataframe), max_rows))
-        ])
-        
-    ], 
-)
-
 
 # Allows the input excel files to be turned into csv files which will be used
 # to calculate the information required for pairings in create_total_score.py
-def ExceltoCSV(excel_file, csv_file_base_path, csv_folder = config['outputs']):
-    '''
-    inputs:
-    Excel file, str - name of the original file
-    csv_file_base_path, str - folder location where each file will be stored
-    excel_folder, str - a folder with this name will be created in csv_base_file_path with sheet names
-                        with excel file. If excel file has sheets then each sheet will be stored as
-                        a seperte csv file
-
-    '''    
-    if not os.path.isdir(csv_file_base_path+csv_folder): 
-        os.mkdir(csv_file_base_path+csv_folder)
-    full_path = csv_file_base_path+csv_folder
-    workbook = xlrd.open_workbook(excel_file)
-
-    for sheet_name in workbook.sheet_names():
-        print('processing - ' + sheet_name)
-        worksheet = workbook.sheet_by_name(sheet_name)
-        csv_file_full_path = full_path + sheet_name.lower().replace(" - ", "_").replace(" ","_") + '.csv'
-        csvfile = open(csv_file_full_path, 'w',encoding='utf-8')
-        writetocsv = csv.writer(csvfile, quoting = csv.QUOTE_ALL, )
-        for rownum in range(worksheet.nrows):
-            writetocsv.writerow(
-    #                 list(x.encode('utf-8') if type(x) == type(u'') else x for x in worksheet.row_values(rownum)
-                    worksheet.row_values(rownum)
-                )
-            
-        csvfile.close()
-     #( "{} has been saved at {}".format(sheet_name, csv_file_full_path))
 
 
-# Method used to parse files that are uploaded through the upload button
-def parse_contents(contents, filename, date):
-    '''
-    contents - contents of the file being uploaded
-    filename - name of the file being uploaded
-    date - time the file is uploaded
 
-    This method will take in the excel file that is
-    uploaded and will create csv files of each sheet
-    in the directory 'uploaded_excel_to_csv' which is 
-    in the root directory
-
-    It also has to potential to print out sheets that
-    are uploaded
-    '''
-    content_type, content_string = contents.split(',')
-    decoded = base64.b64decode(content_string)
-    try:
-        if 'csv' in filename:
-            # Assume that the user uploaded a CSV file
-            return html.Div([
-            'Please upload an excel sheets.'
-        ])
-        elif 'xls' in filename:
-            # Assume that the user uploaded an excel file
-            df = pd.read_excel(io.BytesIO(decoded))
-           
-    except Exception as e:
-        print(e)
-        return html.Div([
-            'There was an error processing this file.'
-        ])
-    ExceltoCSV(excel_file=filename , csv_file_base_path ="" )
-    return None
-
-options = [
-    {"label": "New York City", "value": "NYC"},
-    {"label": "Montreal", "value": "MTL"},
-    {"label": "San Francisco", "value": "SF"},
-]
 
 
 ################################ START APP ################################################
 ###########################################################################################
 
-# APP LAYOUT
-app.layout = html.Div(children=[
-    html.H1(
-        children='MIT SOLVE',
-        style={
-            'textAlign': 'center'
-            
-        }
-    ),
-
-    # Upload files button
-    dcc.Upload(
-        id='upload-data',
-        children=html.Button('Upload Excel Data File', id='upload_button', n_clicks=0),
-        style={
-            'height': '60px',
-            'textAlign': 'center',
-        },
-        # Allow multiple files to be uploaded
-        multiple=True
-    ),
-  
-    # Download all excel files button
-    html.Div(children=[
-        html.A(html.Button('Download All Excel Files'), href="/download_all/",
-        ),
-    ],
-    style={
-        'height': '60px',
-        'textAlign': 'center',
-    }),
-
-    # update solvers button
-     html.Div([
-
-        html.A(html.Button('Update solvers'),
-               n_clicks=0, 
-               id='update-solvers-button'),
-    ],
-    style={
-        'height': '60px',
-        'textAlign': 'left',
-    },
-    id='solver-button-div'),
-
-    # Solver drop down menu 
-    html.Div([
-                html.Label('Select a Solver'),
-                dcc.Dropdown(
-                id='solver-dropdown',
-                value = '',  
-            )
-    ]), 
-   
-
-    # A few line breaks to make dashboard less crowded
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),    
-
-    # 2 side by side graphs
-    html.Div([
-        html.Div([
-            # Title for the horizontal bar graph
-             html.H2(children='Total Outputs Graph', style={'textAlign': 'center'}),
-             # Horizontal total outputs graph
-            dcc.Graph( 
-                id='output_bargraph',
-                # figure= total_fig
-            ),
-        ], className="six columns"),
-
-        html.Div([
-            html.H3(id='individual_graph_title', children='Individual Graph', style={'textAlign': 'center'}),
-            dcc.Graph(id='individual_graph', figure={'data': []})
-        ], className="six columns"),
-    ], className="row"),
-
-
-    html.H4(id='weights_directions', children='Adjust Weight Values inside of Brackets Only --> [ ] '),
-    # 2 side by side comment boxes for weights
-    html.Div([
-        html.Div([
-            # Comment box 1
-            dcc.Textarea(
-                id='geo-weight',
-                value='Textbox1', # initial value
-                style={'display':'inline-block', 'width': '30%', 'height': '10%',},
-            ),
-        ], className="four columns"),
-        html.Div([
-            # Comment box 2
-            dcc.Textarea(
-                id='needs-weight',
-                value='Textbox2', # initial value
-                style={'display':'inline-block', 'width': '30%', 'height': '10%',},
-            ),
-        ], className="four columns")        
-    ], className="row"),
-
-    # 2 side by side comment boxes for weights
-    html.Div([
-        html.Div([
-            # Comment box 3
-            dcc.Textarea(
-                id='challenges-weight',
-                value='Textbox3', # initial value
-                style={'display':'inline-block', 'width': '30%', 'height': '10%',},
-            ),
-        ], className="four columns"),
-        html.Div([
-            # Comment box 4
-            dcc.Textarea(
-                id='stage-weight',
-                value='Textbox4', # initial value
-                style={'display':'inline-block', 'width': '30%', 'height': '10%',},
-            ),
-        ], className="four columns"),      
-    ], className="row"),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-    html.Button('Submit Changes to Weights', id='submit-val', n_clicks=0),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-    html.Div(id='confirmation-text',
-             children='Press Submit to Edit Weights'),
-
-    # Generates the table for the selected solver
-    # selected_solver_row_info is that data of the seleced solver
-    # that will go into the table
-    html.H4(children='Selected Solver Information',style={'textAlign': 'center'}),
-    dash_table.DataTable(
-        id='selected_solver_table',
-        style_cell={
-            'whiteSpace': 'normal',
-            'height': 'auto',
-            'textAlign': 'center',
-            'font_family': 'helvetica',
-            'font_size': '20px',
-        },
-        style_header={
-        'backgroundColor': 'rgb(30, 30, 30)',
-        'color': 'white',
-        },
-    ),
-
-      html.H4(children='Clicked on Partner Information',style={'textAlign': 'center'}),
-    dash_table.DataTable(
-        id='clicked_on_partner_table',
-        style_cell={
-            'whiteSpace': 'normal',
-            'height': 'auto',
-            'textAlign': 'center',
-            'font_family': 'helvetica',
-            'font_size': '20px',
-            'color': 'green'
-        },
-        style_header={
-        'backgroundColor': 'rgb(30, 30, 30)',
-        'color': 'white',
-        },
-    ),
-
-    # A few line breaks to make dashboard less crowded
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-   
-    # Generate a checkbox that determines whether the current partner and solver are matched
-    html.H3(children='Click Checkbox to Confirm Match between Selected Solver and Selected Partner',
-        style={'textAlign': 'center'}
-    ),
-    
-    html.Div([
-              dcc.RadioItems(
-        id='checkbox_confirm',
-        value="No",
-        style={
-            'textAlign': 'center',
-        },
-        # set intitial value to 'denied' which means no match
-        inputStyle={"margin-right": "20px"},
-        labelStyle={'display': 'inline-block'}
-    ),  
-            html.Button("Confirm", id="checkbox_confirm-button")
-    ]), 
-
-  
-    # A line break to make dashboard less crowded
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-
-    # Generates table for the partner that is clicked on in the graph
-    # selected_partner_row_info is that data of the seleced partner
-    # that will go into the table - initially this table won't be populated
-  
-    html.H4(children='Green = 0-1 matches, Blue = 2-3 matches, Red = 4 or more matches',style={'textAlign': 'center'}),
-
-    # A few line breaks to make dashboard less crowded
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-
-    # Used to print out the newly calculated total score dataframe from
-    # the uploaded files. Should only be used for debugging and is not set 
-    # to be functional right now
-    html.Div(id='output-data-upload'),
-
-    # Print the solver matches for the selected partner below the partner table
-    html.Div(id='partner-matches-list',
-    children=[]),
-
-    # Break line to space out the dashboard
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-
-    # hidden layout which is target of callbacks that don't update anything but
-    # plotly dash requires outputs for all callbacks
-    html.Div(id='hidden-div', style={'display':'None'}),
-
-    # Comment box
-    dcc.Textarea(
-        id='textarea-for-comments',
-        value='Text area for comments', # initial value
-        style={'width': '50%', 'height': 200, 'Align-items': 'center'},
-    ),
-])
 
 
 ################################ END APP ################################################
 #########################################################################################
 
 
-# This method will create csv files for each sheet
-# from the uploaded file. The uploaded file must be in the format of
-# a singular excel file consisting of 2 sheets, which are the 
-# partner_data and solver_team_data in that order
-@app.callback(
-    dash.dependencies.Output('output-data-upload', 'children'),
-    [dash.dependencies.Input('upload-data', 'contents')],
-    [dash.dependencies.State('upload-data', 'filename'),
-    dash.dependencies.State('upload-data', 'last_modified')])
-def update_output(list_of_contents, list_of_names, list_of_dates):
-    '''
-    param: contents - all of the files uploaded
-    param: filename - name of the uploaded file
-    param: last_modified - the date in which the file was last modified
-    return: irrelavent output, will never be printed out and is used to 
-    comply with needing an Output for every callback
-    '''
-    if os.path.exists(config['outputs']): 
-        shutil.rmtree(config['outputs'])
-        os.makedirs(config['outputs'])
-    else: 
-        os.makedirs(config['outputs'])
 
 
-    if list_of_contents is not None:
-        # list_of_uploaded_files is fully available here
-        children = [
-            parse_contents(c, n, d) for c, n, d in
-            zip(list_of_contents, list_of_names, list_of_dates)]
-        new_total_score = create_total_score_excel(config['outputs'])
-        # new_total_score.insert(0, "Partners", Partners, True)
-        return None
-
-# This method allows for you to download all of the generated excel files as a zip file
-# Files are challenge_match.xlsx, geo_match.xlsx, needs_match.xlsx, stage_match.xlsx,
-# total_score_from_upload.xlsx and mit_solve_confirmed_matches.xlsx
-# TODO make sure the correct files are being uploaded - think wrong ones are right now
-@app.server.route('/download_all/')
-def download_all():
-    
-    zipf = zipfile.ZipFile(config['zipf_name'],'w', zipfile.ZIP_DEFLATED)
-   
-    for root,dirs, files in os.walk(config['outputs']):
-        for file in files:
-            zipf.write(config['outputs']+file)
-    # zipf.write('mit_solve_confirmed_matches.xlsx')
-    zipf.close()
-    return send_file(config['zipf_name'],
-            mimetype = 'zip',
-            attachment_filename= config['zipf_name'],
-            as_attachment = True)
-
-
-@app.callback(
-    [dash.dependencies.Output('solver-dropdown', 'value'), 
-    dash.dependencies.Output('solver-dropdown', 'options')], 
-    [dash.dependencies.Input('update-solvers-button', 'n_clicks')]
-    )
-def dropdown_options(clicks):
-   
-
-    solver_needs_df = pd.read_csv(config['solver_location'])
-    solvers = solver_needs_df['Org'].values.tolist()
-    options = []
-    for x in solvers: 
-        single_dict = {'label': x, 'value': x }
-        options.append(single_dict)
-
-    
-    dropvalue = "Select.."
-    return [dropvalue, options]
-
-
-
-# This method updates the graph when a new solver is selected from the dropdown
-@app.callback(
-    dash.dependencies.Output('output_bargraph', 'figure'),
-    [dash.dependencies.Input('solver-dropdown', 'value')])
-def update_graph_from_solver_dropdown(value):
-    '''
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: figure (Plotly Express Bar Chart) - the graph for total scores displayed on the dashboard
-    '''
-    
-    # Checks if new files have been uploaded yet instead of hard coded
-    xls_file_total_score = pd.ExcelFile(config['total_score_location'])
-    uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
-
-    # Sort and crop top 5 values for new selected solver
-    total_fig = px.bar(uploaded_df_total_score.sort_values(value, ascending=False)[:5], x=value, 
-    y="Org_y", labels = {'Org_y':'PARTNER',value:'Total Score'})
-    total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
-    return total_fig
-
-
-
-
-
-# This method will update the table displaying more information
-# on the partner that is clicked on in the graph and also create the 
-# additional individual graph
-@app.callback(
-    [dash.dependencies.Output('individual_graph', 'figure'),
-    dash.dependencies.Output('individual_graph_title', 'children')],
-    [dash.dependencies.Input('output_bargraph', 'clickData'),],
-    [dash.dependencies.Input('solver-dropdown', 'value')]
-    )
-def update_individual_graph(clickData, solver_name):
-    '''
-    param: clickData (Plotly Dash Object) - data that is collected from clicking on graph
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: figure (Plotly Express Bar Chart) - individual graph of category values
-    return: children (str) - customized title for individual graph
-    '''
-    # Check to make sure a partnere is selected
-    if clickData != None:
-        # Must get value for partner compared to solver in: geo, needs, stage, challenge
-    
-        partner_name = clickData['points'][0]['y']
-
-        geo_df = pd.read_excel(config['geo_match'])
-        geo_value = float(geo_df[geo_df["Org_y"]==partner_name].iloc[0][solver_name])
-        
-
-        needs_df = pd.read_excel(config['needs_match'])
-        needs_value = float(needs_df[needs_df["Org_y"]==partner_name].iloc[0][solver_name])
-
-        stage_df = pd.read_excel(config['stage_match'])
-        stage_value = float(stage_df[stage_df["Org_y"]==partner_name].iloc[0][solver_name])
-
-        challenge_df = pd.read_excel(config['challenge_match'])
-        challenge_value = float(challenge_df[challenge_df["Org_y"]==partner_name].iloc[0][solver_name])
-
-        partner_values_dict = {'Labels': ['Challenges Score', 'Needs Score', 'Geo Score * Stage Score',
-        'Geo Score', 'Stage Score'], 'Scores': [10*challenge_value, needs_value, 100*geo_value*stage_value,
-        10*geo_value, 10*stage_value]}
-
-        ind_fig = px.bar(partner_values_dict, x='Scores', y='Labels')
-        return_string = "Individual Graph for '" + str(partner_name) + "'"
-        
-        return [ind_fig, return_string]
-    
-    figure={'data': []}
-    return [figure, '']
-
-# This method updates the table displaying more information on a solver
-# everytime a new solver is selected from the dropdown
-@app.callback(
-    [dash.dependencies.Output('selected_solver_table', 'columns'), 
-    dash.dependencies.Output('selected_solver_table', 'data')],
-    [dash.dependencies.Input('solver-dropdown', 'value')])
-def update_solver_table(value):
-    '''
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: data (dict) - a dictionary containing data that will populate the solver table
-    '''
-    # Checks if new files have been uploaded yet instead of hard coded
-    
-    solver_needs_df = pd.read_csv(config['solver_location'])
-    selected_solver_row_info = solver_needs_df[solver_needs_df['Org']==value].dropna(axis='columns')
-    # generate_table(selected_solver_row_info)  
-
-    columns=[
-            {"name": i, "id": i, "deletable": False, "selectable": True} for i in selected_solver_row_info.columns
-        ]
-    data = selected_solver_row_info.to_dict('records')
-    return [columns, data]
-
-
-# This method updates the table displaying more information on a partner
-# everytime a new solver is selected from the dropdown
-@app.callback(
-    [dash.dependencies.Output('clicked_on_partner_table', 'columns'), 
-    dash.dependencies.Output('clicked_on_partner_table', 'data')],
-    [dash.dependencies.Input('output_bargraph', 'clickData')])
-def update_partner_table(clickData):
-    '''
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: data (dict) - a dictionary containing data that will populate the solver table
-    '''
-    # Checks if new files have been uploaded yet instead of hard coded
-    partner_name = clickData['points'][0]['y']
-    partners_df = pd.read_csv(config['partner_location'])
-    selected_partner_row_info = partners_df[partners_df['Org']==partner_name].dropna(axis='columns')
-    # generate_table(selected_solver_row_info)  
-
-    columns=[
-            {"name": i, "id": i, "deletable": False, "selectable": True} for i in selected_partner_row_info.columns
-        ]
-    data = selected_partner_row_info.to_dict('records')
-    return [columns, data]
-   
-
-
-
-@app.callback([dash.dependencies.Output('checkbox_confirm', 'options'),
-              dash.dependencies.Output('checkbox_confirm', 'value')], 
-            [dash.dependencies.Input('solver-dropdown', 'value')])
-def generate_checkboxes(solver): 
+# @app.callback([dash.dependencies.Output('checkbox_confirm', 'options'),
+#               dash.dependencies.Output('checkbox_confirm', 'value')], 
+#             [dash.dependencies.Input('solver-dropdown', 'value')])
+# def generate_checkboxes(solver): 
  
-    # Checks if new files have been uploaded yet instead of hard coded
-    xls_file_total_score = pd.read_excel(config['total_score_location'])
-    uploaded_df_total_score = xls_file_total_score.copy()
-    filtered_data = uploaded_df_total_score.sort_values(solver, ascending=False)[:config['max_matches']]
+#     # Checks if new files have been uploaded yet instead of hard coded
+#     xls_file_total_score = pd.read_excel(config['total_score_location'])
+#     uploaded_df_total_score = xls_file_total_score.copy()
+#     filtered_data = uploaded_df_total_score.sort_values(solver, ascending=False)[:config['max_matches']]
      
-    checkbox = [ {'label': "Yes", 'value': "Yes"}, 
-                 {'label': "No", 'value': "No"}] 
-    value = "No"
+#     checkbox = [ {'label': "Yes", 'value': "Yes"}, 
+#                  {'label': "No", 'value': "No"}] 
+#     value = "No"
     
-    return [checkbox, value]
+#     return [checkbox, value]
 
-@app.callback(
-    dash.dependencies.Output('clicked_on_partner_table', 'style_cell'),
-    [dash.dependencies.Input('checkbox_confirm', 'value'),
-     dash.dependencies.Input('solver-dropdown', 'value'), 
-    dash.dependencies.Input('output_bargraph', 'clickData')])
-def update_confirmed(selected_partners, solver, table_partner): 
+# @app.callback(
+#     dash.dependencies.Output('clicked_on_partner_table', 'style_cell'),
+#     [dash.dependencies.Input('checkbox_confirm', 'value'),
+#      dash.dependencies.Input('solver-dropdown', 'value'), 
+#     dash.dependencies.Input('output_bargraph', 'clickData')])
+# def update_confirmed(selected_partners, solver, table_partner): 
     
-    style_cell={
-            'whiteSpace': 'normal',
-            'height': 'auto',
-            'textAlign': 'center',
-            'font_family': 'helvetica',
-            'font_size': '20px',
-        }    
-    partner_name =  table_partner['points'][0]['y']
+#     style_cell={
+#             'whiteSpace': 'normal',
+#             'height': 'auto',
+#             'textAlign': 'center',
+#             'font_family': 'helvetica',
+#             'font_size': '20px',
+#         }    
+#     partner_name =  table_partner['points'][0]['y']
 
-    # Make partners list if it does not exist 
-    if not os.path.exists(config['track_partners']): 
-        partners_list = pd.read_excel(config['total_score_location'])['Org_y'].values.tolist()
+#     # Make partners list if it does not exist 
+#     if not os.path.exists(config['track_partners']): 
+#         partners_list = pd.read_excel(config['total_score_location'])['Org_y'].values.tolist()
        
-        solvers =[ '' for x in range(0,len(partners_list))]
-        count = [0 for x in range(0,len(partners_list))]
-        partners_trackers = pd.DataFrame(data=[partners_list, solvers, count],
-                                         index=['partners','solvers', 'counter']).T
-        partners_trackers.to_csv(config['track_partners'], index=False)
-    else: 
-        partners_trackers = pd.read_csv(config['track_partners'])
+#         solvers =[ '' for x in range(0,len(partners_list))]
+#         count = [0 for x in range(0,len(partners_list))]
+#         partners_trackers = pd.DataFrame(data=[partners_list, solvers, count],
+#                                          index=['partners','solvers', 'counter']).T
+#         partners_trackers.to_csv(config['track_partners'], index=False)
+#     else: 
+#         partners_trackers = pd.read_csv(config['track_partners'])
         
-    # check if confirmed matches file exists, if not then create it
-    # while creating, label partner-solver matches
-    # also make additions to the partners list
-    if not os.path.exists(config['confirmed_matches']): 
-        total_score = pd.read_excel(config['total_score_location'])
-        for col in total_score:
-            if not col == 'Org_y':
-                total_score[col].values[:] = 0 
+#     # check if confirmed matches file exists, if not then create it
+#     # while creating, label partner-solver matches
+#     # also make additions to the partners list
+#     if not os.path.exists(config['confirmed_matches']): 
+#         total_score = pd.read_excel(config['total_score_location'])
+#         for col in total_score:
+#             if not col == 'Org_y':
+#                 total_score[col].values[:] = 0 
 
-        if selected_partners == "Yes": 
+#         if selected_partners == "Yes": 
 
-            total_score[solver][total_score['Org_y'] == partner_name] = 1
-            partners_trackers['counter'][partners_trackers['partners'] == partner_name] += 1
-            print(partners_trackers['solvers'][partners_trackers['partners'] == partner_name])
-            partners_trackers['solvers'][partners_trackers['partners']==partner_name] += ', '+solver  
+#             total_score[solver][total_score['Org_y'] == partner_name] = 1
+#             partners_trackers['counter'][partners_trackers['partners'] == partner_name] += 1
+#             print(partners_trackers['solvers'][partners_trackers['partners'] == partner_name])
+#             partners_trackers['solvers'][partners_trackers['partners']==partner_name] += ', '+solver  
         
-        total_score.to_csv(config['confirmed_matches'], index=False)
-        partners_trackers.to_csv(config['track_partners'], index=False)
-        solvers_for_partner = int(total_score.loc[total_score['Org_y']==partner_name].sum(axis=1).values) 
-        if solvers_for_partner <= config['partner_inter'] : 
-            style_cell['color'] = 'green'
-        elif solvers_for_partner > config['partner_inter']  and solvers_for_partner <= config['max_matches']: 
-            style_cell['color'] = 'blue'
-        else: 
-            style_cell['color'] = 'red'
+#         total_score.to_csv(config['confirmed_matches'], index=False)
+#         partners_trackers.to_csv(config['track_partners'], index=False)
+#         solvers_for_partner = int(total_score.loc[total_score['Org_y']==partner_name].sum(axis=1).values) 
+#         if solvers_for_partner <= config['partner_inter'] : 
+#             style_cell['color'] = 'green'
+#         elif solvers_for_partner > config['partner_inter']  and solvers_for_partner <= config['max_matches']: 
+#             style_cell['color'] = 'blue'
+#         else: 
+#             style_cell['color'] = 'red'
 
-        return style_cell
+#         return style_cell
 
-    else: 
-        total_score = pd.read_csv(config['confirmed_matches'])
+#     else: 
+#         total_score = pd.read_csv(config['confirmed_matches'])
         
-        if selected_partners == "Yes": 
-            total_score[solver][total_score['Org_y']== partner_name] = 1
-            partners_trackers['counter'][partners_trackers['partners'] == partner_name] += 1
-            print(partners_trackers['solvers'][partners_trackers['partners'] == partner_name])
-            partners_trackers['solvers'][partners_trackers['partners']==partner_name] += ', '+solver  
+#         if selected_partners == "Yes": 
+#             total_score[solver][total_score['Org_y']== partner_name] = 1
+#             partners_trackers['counter'][partners_trackers['partners'] == partner_name] += 1
+#             print(partners_trackers['solvers'][partners_trackers['partners'] == partner_name])
+#             partners_trackers['solvers'][partners_trackers['partners']==partner_name] += ', '+solver  
 
-        solvers_for_partner = int(total_score.loc[total_score['Org_y']==partner_name].sum(axis=1).values) 
-        partners_trackers.to_csv(config['track_partners'], index=False)
-        total_score.to_csv(config['confirmed_matches'], index=False)
+#         solvers_for_partner = int(total_score.loc[total_score['Org_y']==partner_name].sum(axis=1).values) 
+#         partners_trackers.to_csv(config['track_partners'], index=False)
+#         total_score.to_csv(config['confirmed_matches'], index=False)
         
-        if solvers_for_partner <= config['partner_inter'] : 
-            style_cell['color'] = 'green'
-        elif solvers_for_partner > config['partner_inter']  and solvers_for_partner <= config['max_matches']: 
-            style_cell['color'] = 'blue'
-        else: 
-            style_cell['color'] = 'red'
+#         if solvers_for_partner <= config['partner_inter'] : 
+#             style_cell['color'] = 'green'
+#         elif solvers_for_partner > config['partner_inter']  and solvers_for_partner <= config['max_matches']: 
+#             style_cell['color'] = 'blue'
+#         else: 
+#             style_cell['color'] = 'red'
 
-        return style_cell
+#         return style_cell
 
 
 
