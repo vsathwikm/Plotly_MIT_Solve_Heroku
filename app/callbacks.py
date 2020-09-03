@@ -69,8 +69,9 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
     else: 
         os.makedirs(config['outputs'])
 
-    print(os.path.exists(config['outputs']))
+    # print(os.path.exists(config['outputs']))
     if list_of_contents is not None:
+       
         # list_of_uploaded_files is fully available here
         children = [
             utils_app.parse_contents(c, n, d) for c, n, d in
@@ -92,7 +93,6 @@ def download_all():
     for root,dirs, files in os.walk(config['outputs']):
         for file in files:
             zipf.write(config['outputs']+file)
-    # zipf.write('mit_solve_confirmed_matches.xlsx')
     zipf.close()
     return send_file(config['zipf_name'],
             mimetype = 'zip',
