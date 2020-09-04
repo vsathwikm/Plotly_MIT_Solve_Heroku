@@ -1,0 +1,17 @@
+input_file: "../"
+outputs: "../outputs/"
+zipped: "../output_zipped/"
+zipf_name: "MIT_Solve_Excel_Files.zip"
+solver_location: "../outputs/solver_team_data.csv"
+partner_location: "../outputs/partner_data.csv"
+total_score_location: "../outputs/total_score_from_upload.xlsx"
+geo_match: "../outputs/geo_match.xlsx"
+needs_match: "../outputs/needs_match.xlsx"
+stage_match: "../outputs/stage_match.xlsx"
+challenge_match: "../outputs/challenge_match.xlsx" 
+confirmed_matches: '../outputs/confirmed_partner_solver_matches.csv'
+track_partners: '../outputs/partners_list.csv'
+weights: '../outputs/solver_partner_weights.xlsx'
+max_matches: 5
+partner_thres: 0
+partner_inter: 2 
