@@ -43,7 +43,7 @@ def parse_contents(contents, filename, date):
             decoded_data = io.BytesIO(decoded)
             solver_data = pd.read_excel(decoded_data, sheet_name="Solver Team Data")
             partner_data = pd.read_excel(decoded_data, sheet_name="Partner Data")
-            print(solver_data.shape)
+        
             solver_data.to_csv(config['solver_location'])
             partner_data.to_csv(config['partner_location'])
 

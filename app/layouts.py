@@ -17,21 +17,35 @@ layout1 = html.Div(children=[
             
         }
     ),
-
-    # Upload files button
-    dcc.Upload(
-        id='upload-data',
-        children=html.Button('Upload Excel Data File', id='upload_button', n_clicks=0),
-        style={
-            'height': '60px',
+    html.Label('Select a Solver'), 
+    html.Div([
+        # Upload files button
+        dcc.Upload(
+            id='upload-data',
+            children=html.Button('Upload Excel Data File', id='upload_button', n_clicks=0),
+            style={
+                'height': '60px',
             'textAlign': 'center',
-        },
+            },
         # Allow multiple files to be uploaded
-        multiple=True
-    ),
+            multiple=True
+        ),
+        # loading symbol 
+        dcc.Loading(id="upload-loading",
+
+                # Solver drop down menu 
+                children = dcc.Dropdown(
+                                        id='solver-dropdown',
+                                        value = '',  
+                          )
+        )
+    ]), 
+   
   
+    html.Br(), 
+
     # Download all excel files button
-    html.Div(children=[
+    html.Div([
         html.A(html.Button('Download All Excel Files'), href="/download_all/",
         ),
     ],
@@ -40,32 +54,11 @@ layout1 = html.Div(children=[
         'textAlign': 'center',
     }),
 
-    # update solvers button
-     html.Div([
-
-        html.A(html.Button('Update solvers'),
-               n_clicks=0, 
-               id='update-solvers-button'),
-    ],
-    style={
-        'height': '60px',
-        'textAlign': 'left',
-    },
-    id='solver-button-div'),
-
-    # Solver drop down menu 
-    html.Div([
-                html.Label('Select a Solver'),
-                dcc.Dropdown(
-                id='solver-dropdown',
-                value = '',  
-            )
-    ]), 
    
 
     # A few line breaks to make dashboard less crowded
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),    
+    html.Br(), 
+    html.Br(), 
 
     # 2 side by side graphs
     html.Div([
@@ -132,6 +125,12 @@ layout1 = html.Div(children=[
     html.Div(id='confirmation-text',
              children='Press Submit to Edit Weights'),
 
+
+
+    # Generate Weights 
+    html.Button("Generate weights", id="generate-weights", n_clicks=0), 
+    html.Div(id="weights-hidden", style={"display":"none"}), 
+
     # Generates the table for the selected solver
     # selected_solver_row_info is that data of the seleced solver
     # that will go into the table
@@ -169,32 +168,23 @@ layout1 = html.Div(children=[
     ),
 
     # A few line breaks to make dashboard less crowded
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-   
+    html.Br(), 
+    html.Br(), 
+
     # Generate a checkbox that determines whether the current partner and solver are matched
     html.H3(children='Click Checkbox to Confirm Match between Selected Solver and Selected Partner',
         style={'textAlign': 'center'}
     ),
     
-    html.Div([
-              dcc.RadioItems(
-        id='checkbox_confirm',
-        value="No",
-        style={
-            'textAlign': 'center',
-        },
-        # set intitial value to 'denied' which means no match
-        inputStyle={"margin-right": "20px"},
-        labelStyle={'display': 'inline-block'}
-    ),  
-            html.Button("Confirm", id="checkbox_confirm-button")
-    ]), 
 
-    
     html.Div([ 
             html.Div([html.Button("Yes", id="confirm-yes-button")])
-    ], className="row"),
+    ],
+        className="row",
+        style={
+        'height': '60px',
+        'textAlign': 'center',
+    }),
 
 
     # A line break to make dashboard less crowded
@@ -207,8 +197,8 @@ layout1 = html.Div(children=[
     html.H4(children='Green = 0-1 matches, Blue = 2-3 matches, Red = 4 or more matches',style={'textAlign': 'center'}),
 
     # A few line breaks to make dashboard less crowded
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
+    html.Br(),
+    html.Br(),
 
     # Used to print out the newly calculated total score dataframe from
     # the uploaded files. Should only be used for debugging and is not set 
@@ -220,7 +210,7 @@ layout1 = html.Div(children=[
     children=[]),
 
     # Break line to space out the dashboard
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
+   html.Br(),
 
     # hidden layout which is target of callbacks that don't update anything but
     # plotly dash requires outputs for all callbacks

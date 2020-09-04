@@ -37,15 +37,18 @@ from dash.dependencies import Output, Input
 import openpyxl
 import yaml 
 from dash.exceptions import PreventUpdate
-
+import time
 import os 
 
 
 with open("config.yml") as config_file: 
      config = yaml.load(config_file, Loader=yaml.FullLoader)
 
-print(os.getcwd())
 from app import app 
+
+
+
+
 # This method will create csv files for each sheet
 # from the uploaded file. The uploaded file must be in the format of
 # a singular excel file consisting of 2 sheets, which are the 
@@ -69,7 +72,6 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
     else: 
         os.makedirs(config['outputs'])
 
-    # print(os.path.exists(config['outputs']))
     if list_of_contents is not None:
        
         # list_of_uploaded_files is fully available here
@@ -100,12 +102,33 @@ def download_all():
             as_attachment = True)
 
 
+# @app.callback(
+#     [dash.dependencies.Output('solver-dropdown', 'value'), 
+#     dash.dependencies.Output('solver-dropdown', 'options')], 
+#     [dash.dependencies.Input('update-solvers-button', 'n_clicks')]
+#     )
+# def dropdown_options(clicks):
+#     solver_needs_df = pd.read_csv(config['solver_location'])
+#     solvers = solver_needs_df['Org'].values.tolist()
+#     options = []
+#     for x in solvers: 
+#         single_dict = {'label': x, 'value': x }
+#         options.append(single_dict)
+
+    
+#     dropvalue = "Select.."
+#     return [dropvalue, options]
+
+
 @app.callback(
     [dash.dependencies.Output('solver-dropdown', 'value'), 
     dash.dependencies.Output('solver-dropdown', 'options')], 
-    [dash.dependencies.Input('update-solvers-button', 'n_clicks')]
+    [dash.dependencies.Input('upload-data', 'contents')],
+    [dash.dependencies.State('upload-data', 'filename'),
+    dash.dependencies.State('upload-data', 'last_modified')]
     )
-def dropdown_options(clicks):
+def dropdown_options(list_of_contents, list_of_names, list_of_dates):
+    time.sleep(0.1)
     solver_needs_df = pd.read_csv(config['solver_location'])
     solvers = solver_needs_df['Org'].values.tolist()
     options = []
@@ -116,7 +139,6 @@ def dropdown_options(clicks):
     
     dropvalue = "Select.."
     return [dropvalue, options]
-
 
 
 # This method updates the graph when a new solver is selected from the dropdown
@@ -296,7 +318,6 @@ def partner_select(n_clicks, solver,  table_partner):
         
             total_score[solver][total_score['Org_y']== partner_name] = 1
             partners_trackers['counter'][partners_trackers['partners'] == partner_name] += 1
-            print(partners_trackers['solvers'][partners_trackers['partners'] == partner_name])
             partners_trackers['solvers'][partners_trackers['partners']==partner_name] += ', '+solver  
 
             solvers_for_partner = int(total_score.loc[total_score['Org_y']==partner_name].sum(axis=1).values) 
@@ -312,3 +333,31 @@ def partner_select(n_clicks, solver,  table_partner):
 
             return style_cell    
 
+
+@app.callback(Output("weights-hidden", "children"), 
+              [Input("generate-weights", "n_clicks")])
+def generate_weights(n_clicks): 
+    if n_clicks is None: 
+        PreventUpdate
+    else: 
+
+        if not os.path.exists(config['weights']): 
+
+            data_df = pd.read_excel(config['total_score_location'], index=False)
+            unpivoted_inital_table = pd.melt(data_df, id_vars="Org_y")
+            zero_column = unpivoted_inital_table['value']
+            unpivoted_inital_table = unpivoted_inital_table.assign(geo_score=zero_column, 
+                                    challenge_score=zero_column,
+                                    needs_score=zero_column, 
+                                    stage_score=zero_column)
+            partners_solvers_weights =  unpivoted_inital_table.drop(columns='value')
+            partners_solvers_weights = partners_solvers_weights.rename(columns={"variable":"solver",
+                                                                                 "geo_score":"geo_weights",
+                                                                                 "challenge_score": "challenge_weights",
+                                                                                 "needs_score":"needs_weights",
+                                                                                 "stage_score":"stage_weights"})
+            cols = ["geo_weights", "challenge_weights", "needs_weights", "stage_weights"] 
+            for col in cols:
+                partners_solvers_weights[col].values[:] = 1                                                                    
+            partners_solvers_weights.to_csv(config['weights'])
+        return None 
