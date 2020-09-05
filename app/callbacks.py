@@ -341,7 +341,7 @@ def generate_weights(n_clicks):
         PreventUpdate
     else: 
 
-        if not os.path.exists(config['weights']): 
+        if not os.path.exists(config['initial_weights']): 
 
             data_df = pd.read_excel(config['total_score_location'], index=False)
             unpivoted_inital_table = pd.melt(data_df, id_vars="Org_y")
@@ -359,5 +359,24 @@ def generate_weights(n_clicks):
             cols = ["geo_weights", "challenge_weights", "needs_weights", "stage_weights"] 
             for col in cols:
                 partners_solvers_weights[col].values[:] = 1                                                                    
-            partners_solvers_weights.to_csv(config['weights'])
+            partners_solvers_weights.to_csv(config['current_weights'])
         return None 
+
+
+
+@app.callback([ Output("geo-weight", "value"),
+                Output("stage-weight", "value"), 
+                Output("challenges-weight", "value"), 
+                Output("needs-weight", "value")],
+                [Input('output_bargraph', 'clickData'),
+                 Input('solver-dropdown', 'value')])
+def read_weights(clickData, solver): 
+   
+    if clickData: 
+        partner_name = clickData['points'][0]['y']
+        if os.path.exists(config['initial_weights']): 
+            print("workds")
+            partner_solver_weights = pd.read_csv(config['initial_weights'])
+            print("test", partner_solver_weights[(partner_solver_weights['solver'] == solver) & (partner_solver_weights['Org_y'] == partner_name)] )
+
+    return ["1","1","1","1"]

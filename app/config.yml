@@ -11,7 +11,8 @@ stage_match: "../outputs/stage_match.xlsx"
 challenge_match: "../outputs/challenge_match.xlsx" 
 confirmed_matches: '../outputs/confirmed_partner_solver_matches.csv'
 track_partners: '../outputs/partners_list.csv'
-weights: '../outputs/solver_partner_weights.xlsx'
+initial_weights: '../outputs/solver_partner_weights.csv'
+current_weights: '../outputs/solver_partner_weights.csv'
 max_matches: 5
 partner_thres: 0
 partner_inter: 2 
