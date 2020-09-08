@@ -2,8 +2,12 @@ import pandas as pd
 import numpy as np 
 from utils import zebra 
 import os
+import yaml 
 
-def create_total_score_excel(export_path):
+with open("config.yml") as config_file: 
+     config = yaml.load(config_file, Loader=yaml.FullLoader)
+
+def create_total_score_excel(export_path, geo_weights_pivot, needs_weights_pivot, challenge_weights_pivot, stage_weights_pivot):
     ''' This function will create the total_score.xlsx
     sheet from the uploaded files
     '''
@@ -58,8 +62,15 @@ def create_total_score_excel(export_path):
     # Generate pivot table
     _,stage_pivot_copy = zebra.pivot_table_stage(st_solver, st_partners, export_path, export=True)
 
+ 
+    geo_term = pd.DataFrame(geo_weights_pivot.values*geo_pivot_copy.astype(float).values, columns=geo_weights_pivot.columns, index=geo_weights_pivot.index)['geo_weights']
+    stage_term = pd.DataFrame(stage_weights_pivot.values*stage_pivot_copy.astype(float).values, columns=stage_weights_pivot.columns, index=stage_weights_pivot.index)
+    geo_stage_term = 100*pd.DataFrame(geo_term.values*stage_term.values, columns=stage_term.columns, index=stage_term.index)['stage_weights']
+    needs_term =  pd.DataFrame(needs_weights_pivot.values*needs_pivot_copy.astype(float).values, columns=needs_weights_pivot.columns, index=needs_weights_pivot.index)['needs_weights']
+    challenge_term = 10*pd.DataFrame(challenge_weights_pivot.values*challenges_pivot_copy.astype(float).values, columns=challenge_weights_pivot.columns, index=challenge_weights_pivot.index)['challenge_weights']
+
     # Combine all of the answers
-    total_score = ((geo_pivot_copy.astype(int)*stage_pivot_copy.astype(int))*100) + (challenges_pivot_copy.astype(int)*10 ) + needs_pivot_copy
+    total_score = geo_stage_term + challenge_term + needs_term
 
     # Export to total_score.xlsx
     # total_score.to_excel("MIT_SOLVE_downloadable_excel_files/total_score_from_upload.xlsx")

@@ -81,22 +81,24 @@ layout1 = html.Div(children=[
     ], className="row"),
 
 
-    html.H4(id='weights_directions', children='Adjust Weight Values inside of Brackets Only --> [ ] '),
+    html.H4(id='weights_directions', children='Adjust Weight Values '),
     # 2 side by side comment boxes for weights
     html.Div([
         html.Div([
             # Comment box 1
+            html.H5("Geo weight"), 
             dcc.Textarea(
                 id='geo-weight',
-                value='Textbox1', # initial value
+                value='1', # initial value
                 style={'display':'inline-block', 'width': '30%', 'height': '10%',},
             ),
         ], className="four columns"),
         html.Div([
             # Comment box 2
+            html.H5("Needs weight"),
             dcc.Textarea(
                 id='needs-weight',
-                value='Textbox2', # initial value
+                value='1', # initial value
                 style={'display':'inline-block', 'width': '30%', 'height': '10%',},
             ),
         ], className="four columns")        
@@ -106,17 +108,19 @@ layout1 = html.Div(children=[
     html.Div([
         html.Div([
             # Comment box 3
+            html.H5("Challenge weight"),
             dcc.Textarea(
                 id='challenge-weight',
-                value='Textbox3', # initial value
+                value='1', # initial value
                 style={'display':'inline-block', 'width': '30%', 'height': '10%',},
             ),
         ], className="four columns"),
         html.Div([
             # Comment box 4
+            html.H5("Stage weight"),
             dcc.Textarea(
                 id='stage-weight',
-                value='Textbox4', # initial value
+                value='1', # initial value
                 style={'display':'inline-block', 'width': '30%', 'height': '10%',},
             ),
         ], className="four columns"),      
