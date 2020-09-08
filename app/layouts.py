@@ -34,10 +34,12 @@ layout1 = html.Div(children=[
         dcc.Loading(id="upload-loading",
 
                 # Solver drop down menu 
-                children = dcc.Dropdown(
+                children = [dcc.Dropdown(
                                         id='solver-dropdown',
                                         value = '',  
                           )
+                          
+                ]
         )
     ]), 
    
@@ -105,7 +107,7 @@ layout1 = html.Div(children=[
         html.Div([
             # Comment box 3
             dcc.Textarea(
-                id='challenges-weight',
+                id='challenge-weight',
                 value='Textbox3', # initial value
                 style={'display':'inline-block', 'width': '30%', 'height': '10%',},
             ),
@@ -215,6 +217,7 @@ layout1 = html.Div(children=[
     # hidden layout which is target of callbacks that don't update anything but
     # plotly dash requires outputs for all callbacks
     html.Div(id='hidden-div', style={'display':'None'}),
+    html.Div(id='hidden-div2', style={'display':'None'}),
 
     # Comment box
     dcc.Textarea(

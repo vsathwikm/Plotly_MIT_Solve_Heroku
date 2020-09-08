@@ -32,7 +32,7 @@ import plotly.express as px
 import pandas as pd
 import dash
 import plotly.graph_objects as go
-from dash.dependencies import Output, Input
+from dash.dependencies import Output, Input, State
 # writing to excel files
 import openpyxl
 import yaml 
@@ -128,7 +128,9 @@ def download_all():
     dash.dependencies.State('upload-data', 'last_modified')]
     )
 def dropdown_options(list_of_contents, list_of_names, list_of_dates):
-    time.sleep(0.1)
+    while not os.path.exists(config['solver_location']): 
+        time.sleep(0.1)
+
     solver_needs_df = pd.read_csv(config['solver_location'])
     solvers = solver_needs_df['Org'].values.tolist()
     options = []
@@ -150,10 +152,9 @@ def update_graph_from_solver_dropdown(value):
     param: solver_name (str) - name of the selected solver from the dropdown menu
     return: figure (Plotly Express Bar Chart) - the graph for total scores displayed on the dashboard
     '''
-    
+    time.sleep(0.1)
     # Checks if new files have been uploaded yet instead of hard coded
-    xls_file_total_score = pd.ExcelFile(config['total_score_location'])
-    uploaded_df_total_score = xls_file_total_score.parse('Sheet1')
+    uploaded_df_total_score = pd.read_excel(config['total_score_location'], sheet_name="Sheet1")
 
     # Sort and crop top 5 values for new selected solver
     total_fig = px.bar(uploaded_df_total_score.sort_values(value, ascending=False)[:5], x=value, 
@@ -166,10 +167,10 @@ def update_graph_from_solver_dropdown(value):
 # on the partner that is clicked on in the graph and also create the 
 # additional individual graph
 @app.callback(
-    [dash.dependencies.Output('individual_graph', 'figure'),
-    dash.dependencies.Output('individual_graph_title', 'children')],
-    [dash.dependencies.Input('output_bargraph', 'clickData'),],
-    [dash.dependencies.Input('solver-dropdown', 'value')]
+    [Output('individual_graph', 'figure'),
+    Output('individual_graph_title', 'children')],
+    [Input('output_bargraph', 'clickData')],
+    [State('solver-dropdown', 'value')]
     )
 def update_individual_graph(clickData, solver_name):
     '''
@@ -181,13 +182,12 @@ def update_individual_graph(clickData, solver_name):
     # Check to make sure a partnere is selected
     if clickData != None:
         # Must get value for partner compared to solver in: geo, needs, stage, challenge
-    
+        
         partner_name = clickData['points'][0]['y']
 
         geo_df = pd.read_excel(config['geo_match'])
         geo_value = float(geo_df[geo_df["Org_y"]==partner_name].iloc[0][solver_name])
         
-
         needs_df = pd.read_excel(config['needs_match'])
         needs_value = float(needs_df[needs_df["Org_y"]==partner_name].iloc[0][solver_name])
 
@@ -343,7 +343,7 @@ def generate_weights(n_clicks):
 
         if not os.path.exists(config['initial_weights']): 
 
-            data_df = pd.read_excel(config['total_score_location'], index=False)
+            data_df = pd.read_excel(config['total_score_location'])
             unpivoted_inital_table = pd.melt(data_df, id_vars="Org_y")
             zero_column = unpivoted_inital_table['value']
             unpivoted_inital_table = unpivoted_inital_table.assign(geo_score=zero_column, 
@@ -366,7 +366,7 @@ def generate_weights(n_clicks):
 
 @app.callback([ Output("geo-weight", "value"),
                 Output("stage-weight", "value"), 
-                Output("challenges-weight", "value"), 
+                Output("challenge-weight", "value"), 
                 Output("needs-weight", "value")],
                 [Input('output_bargraph', 'clickData'),
                  Input('solver-dropdown', 'value')])
@@ -374,9 +374,77 @@ def read_weights(clickData, solver):
    
     if clickData: 
         partner_name = clickData['points'][0]['y']
-        if os.path.exists(config['initial_weights']): 
-            print("workds")
-            partner_solver_weights = pd.read_csv(config['initial_weights'])
-            print("test", partner_solver_weights[(partner_solver_weights['solver'] == solver) & (partner_solver_weights['Org_y'] == partner_name)] )
+        if os.path.exists(config['current_weights']): 
+         
+            partner_solver_weights = pd.read_csv(config['current_weights'])
+            partner_solver_pair = partner_solver_weights[(partner_solver_weights['solver'] == solver) & (partner_solver_weights['Org_y'] == partner_name)]
+            partner_solver_pair_str = partner_solver_pair[["geo_weights", "challenge_weights", "needs_weights", "stage_weights"]].astype(str).values.tolist()
+            
+            return partner_solver_pair_str[0]
+        else: 
+            return ["1","1","1","1"]
 
-    return ["1","1","1","1"]
+@app.callback(Output("hidden-div2", "children"),
+                [Input("submit-val", "n_clicks"), 
+                Input("geo-weight", "value"),
+                Input("stage-weight", "value"), 
+                Input("challenge-weight", "value"), 
+                Input("needs-weight", "value"),
+                Input('output_bargraph', 'clickData')],
+                [State('solver-dropdown', 'value')]
+               )
+def write_weights(clicks, gw, sw, cw, nw, clickData, solver_name): 
+    if clicks is None: 
+        PreventUpdate
+    else: 
+        partner_name = clickData['points'][0]['y']
+        partner_solver_weights = pd.read_csv(config['current_weights'])
+       
+        # Add the entered weighted to weight matrix
+        partner_solver_row = partner_solver_weights[(partner_solver_weights['solver'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['geo_weights'].index
+        partner_solver_weights.loc[partner_solver_row, 'geo_weights'] = gw
+        partner_solver_weights.loc[partner_solver_row, 'challenge_weights'] = cw
+        partner_solver_weights.loc[partner_solver_row, 'needs_weights'] = nw
+        partner_solver_weights.loc[partner_solver_row, 'stage_weights'] = sw
+        partner_solver_weights.to_csv(config['current_weights'], index=False)
+        return None 
+
+@app.callback(Output("hidden-div", "children"),
+                [Input("submit-val", "n_clicks"), 
+                Input("geo-weight", "value"),
+                Input("stage-weight", "value"), 
+                Input("challenge-weight", "value"), 
+                Input("needs-weight", "value"),
+                Input('output_bargraph', 'clickData')],
+                [State('solver-dropdown', 'value')]
+               )
+def update_total_score(clicks, gw, sw, cw, nw, clickData, solver_name):
+    if clicks is None: 
+        PreventUpdate
+    else: 
+        partner_name = clickData['points'][0]['y']
+       
+        # Get total score from excel sheet
+        total_score_df = pd.read_excel(config['total_score_location'], sheet_name="Sheet1")
+        
+        geo_df = pd.read_excel(config['geo_match'])
+        geo_value = float(geo_df[geo_df["Org_y"]==partner_name].iloc[0][solver_name])
+        
+        needs_df = pd.read_excel(config['needs_match'])
+        needs_value = float(needs_df[needs_df["Org_y"]==partner_name].iloc[0][solver_name])
+
+        stage_df = pd.read_excel(config['stage_match'])
+        stage_value = float(stage_df[stage_df["Org_y"]==partner_name].iloc[0][solver_name])
+
+        challenge_df = pd.read_excel(config['challenge_match'])
+        challenge_value = float(challenge_df[challenge_df["Org_y"]==partner_name].iloc[0][solver_name])
+
+        challenge_term = float(cw)*float(config['challenge_weight'])*challenge_value
+        needs_term =  float(nw)*float(config['needs_weight'])*needs_value
+        geo_stage_term =  float(sw)*float(gw)*float(config['geo_stage_weight'])*geo_value*stage_value
+        total_score = challenge_term + needs_term + geo_stage_term 
+
+        total_score_df[solver_name][(total_score_df['Org_y'] == partner_name)] = str(total_score)
+        total_score_df.to_excel(config['total_score_location'], index=False)
+
+        return None
