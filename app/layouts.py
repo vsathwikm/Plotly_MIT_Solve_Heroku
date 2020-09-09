@@ -17,7 +17,7 @@ layout1 = html.Div(children=[
             
         }
     ),
-    html.Label('Select a Solver'), 
+    
     html.Div([
         # Upload files button
         dcc.Upload(
@@ -30,6 +30,8 @@ layout1 = html.Div(children=[
         # Allow multiple files to be uploaded
             multiple=True
         ),
+        html.Label('Select a Solver'),
+        html.H5('Once you upload partner-solver data the drop down will be populated'),
         # loading symbol 
         dcc.Loading(id="upload-loading",
 
