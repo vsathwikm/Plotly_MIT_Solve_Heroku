@@ -78,7 +78,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         needs_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'needs_weights']], columns='solver', index='Org_y' )
         challenge_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'challenge_weights']], columns='solver', index='Org_y' )
         stage_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'stage_weights']], columns='solver', index='Org_y' )
-
+        print("outside shape: ", geo_weights_pivot)
         # list_of_uploaded_files is fully available here
         children = [
             utils_app.parse_contents(c, n, d) for c, n, d in

@@ -62,7 +62,7 @@ def create_total_score_excel(export_path, geo_weights_pivot, needs_weights_pivot
     # Generate pivot table
     _,stage_pivot_copy = zebra.pivot_table_stage(st_solver, st_partners, export_path, export=True)
 
- 
+    print("geo frames", geo_weights_pivot.shape, geo_pivot_copy.astype(float).shape) 
     geo_term = pd.DataFrame(geo_weights_pivot.values*geo_pivot_copy.astype(float).values, columns=geo_weights_pivot.columns, index=geo_weights_pivot.index)['geo_weights']
     stage_term = pd.DataFrame(stage_weights_pivot.values*stage_pivot_copy.astype(float).values, columns=stage_weights_pivot.columns, index=stage_weights_pivot.index)
     geo_stage_term = 100*pd.DataFrame(geo_term.values*stage_term.values, columns=stage_term.columns, index=stage_term.index)['stage_weights']
