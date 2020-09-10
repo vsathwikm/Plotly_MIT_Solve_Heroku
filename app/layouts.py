@@ -32,6 +32,7 @@ layout1 = html.Div(children=[
         ),
         html.Label('Select a Solver'),
         html.H5('Once you upload partner-solver data the drop down will be populated'),
+        html.Button('Update solver', id='update-solver-btn', n_clicks=0),
         # loading symbol 
         dcc.Loading(id="upload-loading",
 

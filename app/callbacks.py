@@ -115,25 +115,29 @@ def download_all():
 @app.callback(
     [dash.dependencies.Output('solver-dropdown', 'value'), 
     dash.dependencies.Output('solver-dropdown', 'options')], 
-    [dash.dependencies.Input('upload-data', 'contents')],
+    [dash.dependencies.Input('update-solver-btn', 'n_clicks'),
+    dash.dependencies.Input('upload-data', 'contents')],
     [dash.dependencies.State('upload-data', 'filename'),
     dash.dependencies.State('upload-data', 'last_modified')]
     )
-def dropdown_options(list_of_contents, list_of_names, list_of_dates):
+def dropdown_options(n_clicks, list_of_contents, list_of_names, list_of_dates):
     
-    while not os.path.exists(config['solver_location']): 
-        time.sleep(0.1)
+    # while not os.path.exists(config['solver_location']): 
+    #     time.sleep(0.01)
+    if n_clicks is None: 
+        PreventUpdate
+    else: 
 
-    solver_needs_df = pd.read_csv(config['solver_location'])
-    solvers = solver_needs_df['Org'].values.tolist()
-    options = []
-    for x in solvers: 
-        single_dict = {'label': x, 'value': x }
-        options.append(single_dict)
+        solver_needs_df = pd.read_csv(config['solver_location'])
+        solvers = solver_needs_df['Org'].values.tolist()
+        options = []
+        for x in solvers: 
+            single_dict = {'label': x, 'value': x }
+            options.append(single_dict)
 
-    
-    dropvalue = "Select.."
-    return [dropvalue, options]
+        
+        dropvalue = "Select.."
+        return [dropvalue, options]
 
 
 # This method updates the graph when a new solver is selected from the dropdown
@@ -147,8 +151,8 @@ def update_graph_from_solver_dropdown(value, n_clicks):
     return: figure (Plotly Express Bar Chart) - the graph for total scores displayed on the dashboard
     '''
     
-    while not os.path.exists(config['total_score_location']): 
-        time.sleep(0.1)
+    # while not os.path.exists(config['total_score_location']): 
+    #     time.sleep(0.01)
     # Checks if new files have been uploaded yet instead of hard coded
     uploaded_df_total_score = pd.read_excel(config['total_score_location'], sheet_name="Sheet1")
 
