@@ -7,4 +7,5 @@ COPY . /app
 WORKDIR /app/app
 EXPOSE 8080
 EXPOSE 8050
-CMD python index.py
+EXPOSE 8000
+CMD gunicorn -b :8080 index:server
