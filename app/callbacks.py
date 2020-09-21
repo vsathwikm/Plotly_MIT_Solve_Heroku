@@ -4,6 +4,7 @@ import io
 
 
 
+
 # for creating the new total_score.xlsx
 from utils.create_total_score import create_total_score_excel
 from utils import utils_app
@@ -78,7 +79,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         needs_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'needs_weights']], columns='solver', index='Org_y' )
         challenge_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'challenge_weights']], columns='solver', index='Org_y' )
         stage_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'stage_weights']], columns='solver', index='Org_y' )
-        print("outside shape: ", geo_weights_pivot)
+       
         # list_of_uploaded_files is fully available here
         children = [
             utils_app.parse_contents(c, n, d) for c, n, d in
@@ -98,16 +99,14 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
 # TODO make sure the correct files are being uploaded - think wrong ones are right now
 @app.server.route('/download_all/')
 def download_all():
-    
-    zipf = zipfile.ZipFile(config['zipf_name'],'w', zipfile.ZIP_DEFLATED)
-   
-    for root,dirs, files in os.walk(config['outputs']):
-        for file in files:
-            zipf.write(config['outputs']+file)
-    zipf.close()
-    return send_file(config['zipf_name'],
+    """ Download all files in the outputs folder 
+    :return: Zip file containing all the files in the outputs folder
+    :rtype: zip file
+    """
+    shutil.make_archive(config['zipf_name'], 'zip', 'outputs/')
+    return send_file(config['zipped'],
             mimetype = 'zip',
-            attachment_filename= config['zipf_name'],
+            attachment_filename= config['zipped'],
             as_attachment = True)
 
 
@@ -115,25 +114,40 @@ def download_all():
 @app.callback(
     [dash.dependencies.Output('solver-dropdown', 'value'), 
     dash.dependencies.Output('solver-dropdown', 'options')], 
-    [dash.dependencies.Input('upload-data', 'contents')],
+    [dash.dependencies.Input('update-solver-btn', 'n_clicks'),
+    dash.dependencies.Input('upload-data', 'contents')],
     [dash.dependencies.State('upload-data', 'filename'),
     dash.dependencies.State('upload-data', 'last_modified')]
     )
-def dropdown_options(list_of_contents, list_of_names, list_of_dates):
-    
-    while not os.path.exists(config['solver_location']): 
-        time.sleep(0.1)
+def dropdown_options(n_clicks, list_of_contents, list_of_names, list_of_dates):
+    """ Populate dropdown menu with Solver names 
 
-    solver_needs_df = pd.read_csv(config['solver_location'])
-    solvers = solver_needs_df['Org'].values.tolist()
-    options = []
-    for x in solvers: 
-        single_dict = {'label': x, 'value': x }
-        options.append(single_dict)
-
+    :param n_clicks: Click count of the update solver button
+    :type n_clicks: Int
+    :param list_of_contents: Binary data of the user uploaded files 
+    :type list_of_contents: Binary data
+    :param list_of_names: Names of user uploaded files
+    :type list_of_names: Str
+    :param list_of_dates: Dates when user uploaded files
+    :type list_of_dates: Str
+    :return: Names of all Solvers uploaded by user
+    :rtype: List
+    """
     
-    dropvalue = "Select.."
-    return [dropvalue, options]
+    if n_clicks is None: 
+        PreventUpdate
+    else: 
+
+        solver_needs_df = pd.read_csv(config['solver_location'])
+        solvers = solver_needs_df['Org'].values.tolist()
+        options = []
+        for x in solvers: 
+            single_dict = {'label': x, 'value': x }
+            options.append(single_dict)
+
+        
+        dropvalue = "Select.."
+        return [dropvalue, options]
 
 
 # This method updates the graph when a new solver is selected from the dropdown
@@ -142,13 +156,18 @@ def dropdown_options(list_of_contents, list_of_names, list_of_dates):
     [Input('solver-dropdown', 'value'),
      Input('submit-val', 'n_clicks')])
 def update_graph_from_solver_dropdown(value, n_clicks):
-    '''
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: figure (Plotly Express Bar Chart) - the graph for total scores displayed on the dashboard
-    '''
+    """ Selecting a Solver from the dropdown menu plots of bar graph with top 5 partner matches
+
+    :param value: Solver's name as selected from dropdown
+    :type value: Str
+    :param n_clicks: Click count of the update solver button
+    :type n_clicks: Int
+    :return: Plotly bar chart showing the top 5 Partner matches for the selected Solver
+    :rtype: Figure
+    """
     
-    while not os.path.exists(config['total_score_location']): 
-        time.sleep(0.1)
+    # while not os.path.exists(config['total_score_location']): 
+    #     time.sleep(0.01)
     # Checks if new files have been uploaded yet instead of hard coded
     uploaded_df_total_score = pd.read_excel(config['total_score_location'], sheet_name="Sheet1")
 

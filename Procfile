@@ -1,1 +1,1 @@
-web: gunicorn --chdir app index:server
+web: cd app && gunicorn index:server
