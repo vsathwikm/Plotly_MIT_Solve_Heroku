@@ -100,16 +100,18 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
 @app.server.route('/download_all/')
 def download_all():
     print("testing_downloads")
-    zipf = zipfile.ZipFile(config['zipf_name'],'w', zipfile.ZIP_DEFLATED)
+    # zipf = zipfile.ZipFile(config['zipf_name'],'w', zipfile.ZIP_DEFLATED)
    
-    for root,dirs, files in os.walk("outputs/"):
-        for file in files:
-            print("file name{}".format(os.path.join(root,file)))
-            print(root)
-            zipf.write(os.path.join(root,file))
-    zipf.close()
+    # for root,dirs, files in os.walk("outputs/"):
+    #     for file in files:
+    #         print("file name{}".format(os.path.join(root,file)))
+    #         print(root)
+    #         zipf.write(os.path.join(root,file))
+    # zipf.close()
+
+    shutil.make_archive(config['zipf_name'], 'zip', 'outputs/')
     # return None 
-    return send_file(config['zipf_name'],
+    return send_file(config['zipped'],
             mimetype = 'zip',
             attachment_filename= config['zipf_name'],
             as_attachment = True)
