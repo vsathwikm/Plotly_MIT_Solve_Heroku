@@ -99,18 +99,11 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
 # TODO make sure the correct files are being uploaded - think wrong ones are right now
 @app.server.route('/download_all/')
 def download_all():
-    print("testing_downloads")
-    # zipf = zipfile.ZipFile(config['zipf_name'],'w', zipfile.ZIP_DEFLATED)
-   
-    # for root,dirs, files in os.walk("outputs/"):
-    #     for file in files:
-    #         print("file name{}".format(os.path.join(root,file)))
-    #         print(root)
-    #         zipf.write(os.path.join(root,file))
-    # zipf.close()
-
+    """ Download all files in the outputs folder 
+    :return: Zip file containing all the files in the outputs folder
+    :rtype: zip file
+    """
     shutil.make_archive(config['zipf_name'], 'zip', 'outputs/')
-    # return None 
     return send_file(config['zipped'],
             mimetype = 'zip',
             attachment_filename= config['zipped'],
@@ -127,9 +120,20 @@ def download_all():
     dash.dependencies.State('upload-data', 'last_modified')]
     )
 def dropdown_options(n_clicks, list_of_contents, list_of_names, list_of_dates):
+    """ Populate dropdown menu with Solver names 
+
+    :param n_clicks: Click count of the update solver button
+    :type n_clicks: Int
+    :param list_of_contents: Binary data of the user uploaded files 
+    :type list_of_contents: Binary data
+    :param list_of_names: Names of user uploaded files
+    :type list_of_names: Str
+    :param list_of_dates: Dates when user uploaded files
+    :type list_of_dates: Str
+    :return: Names of all Solvers uploaded by user
+    :rtype: List
+    """
     
-    # while not os.path.exists(config['solver_location']): 
-    #     time.sleep(0.01)
     if n_clicks is None: 
         PreventUpdate
     else: 
@@ -152,10 +156,15 @@ def dropdown_options(n_clicks, list_of_contents, list_of_names, list_of_dates):
     [Input('solver-dropdown', 'value'),
      Input('submit-val', 'n_clicks')])
 def update_graph_from_solver_dropdown(value, n_clicks):
-    '''
-    param: solver_name (str) - name of the selected solver from the dropdown menu
-    return: figure (Plotly Express Bar Chart) - the graph for total scores displayed on the dashboard
-    '''
+    """ Selecting a Solver from the dropdown menu plots of bar graph with top 5 partner matches
+
+    :param value: Solver's name as selected from dropdown
+    :type value: Str
+    :param n_clicks: Click count of the update solver button
+    :type n_clicks: Int
+    :return: Plotly bar chart showing the top 5 Partner matches for the selected Solver
+    :rtype: Figure
+    """
     
     # while not os.path.exists(config['total_score_location']): 
     #     time.sleep(0.01)
