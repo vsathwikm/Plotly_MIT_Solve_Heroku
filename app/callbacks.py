@@ -113,7 +113,7 @@ def download_all():
     # return None 
     return send_file(config['zipped'],
             mimetype = 'zip',
-            attachment_filename= config['zipf_name'],
+            attachment_filename= config['zipped'],
             as_attachment = True)
 
 
