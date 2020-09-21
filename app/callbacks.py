@@ -4,6 +4,7 @@ import io
 
 
 
+
 # for creating the new total_score.xlsx
 from utils.create_total_score import create_total_score_excel
 from utils import utils_app
@@ -78,7 +79,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         needs_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'needs_weights']], columns='solver', index='Org_y' )
         challenge_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'challenge_weights']], columns='solver', index='Org_y' )
         stage_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'stage_weights']], columns='solver', index='Org_y' )
-        print("outside shape: ", geo_weights_pivot)
+       
         # list_of_uploaded_files is fully available here
         children = [
             utils_app.parse_contents(c, n, d) for c, n, d in
@@ -98,13 +99,16 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
 # TODO make sure the correct files are being uploaded - think wrong ones are right now
 @app.server.route('/download_all/')
 def download_all():
-    
+    print("testing_downloads")
     zipf = zipfile.ZipFile(config['zipf_name'],'w', zipfile.ZIP_DEFLATED)
    
-    for root,dirs, files in os.walk(config['outputs']):
+    for root,dirs, files in os.walk("outputs/"):
         for file in files:
-            zipf.write(config['outputs']+file)
+            print("file name{}".format(os.path.join(root,file)))
+            print(root)
+            zipf.write(os.path.join(root,file))
     zipf.close()
+    # return None 
     return send_file(config['zipf_name'],
             mimetype = 'zip',
             attachment_filename= config['zipf_name'],
