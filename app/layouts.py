@@ -19,10 +19,15 @@ layout1 = html.Div(children=[
     ),
     
     html.Div([
+        html.H2("Upload Excel files"),
+        html.H5("Upload an excel file with three sheets labeled: Solver Team Data, Partner Data, Initial Weights"),
         # Upload files button
         dcc.Upload(
             id='upload-data',
-            children=html.Button('Upload Excel Data File', id='upload_button', n_clicks=0),
+            children=html.Div([
+            'Upload Excel Data File ',
+            html.A('Select Files'),
+            ]),
             style={
                 'height': '60px',
             'textAlign': 'center',
@@ -30,6 +35,44 @@ layout1 = html.Div(children=[
         # Allow multiple files to be uploaded
             multiple=True
         ),
+
+        # Used to print out the newly calculated total score dataframe from
+        # the uploaded files. Should only be used for debugging and is not set 
+        # to be functional right now
+        html.Div(id='output-data-upload'),
+        html.Br(),
+        html.H2("Generate weights from Partner-Solver Data"), 
+        html.Div([
+                    dcc.Upload(
+                            id='gen-weights',
+                            children=html.Div([
+                            'Upload Partner-Solve file ',
+                            html.A('Select Files'),
+                            ]),  
+                            style={
+                                    'height': '60px',
+                                'textAlign': 'center',
+                                },
+                    # Allow multiple files to be uploaded
+                    multiple=True
+                            ),
+                    html.Div(id='output-gen-weights'), 
+
+        ]), 
+        
+      
+
+        html.Div([
+                html.A(html.Button('Download Partner-Solver-Weights'), href="/download-weights/",
+                ),
+                 ],
+                style={
+                            'height': '60px',
+                            'textAlign': 'center',
+                        }
+                ),
+        html.Br(),
+
         html.Label('Select a Solver'),
         html.H5('Once you upload partner-solver data the drop down will be populated'),
         html.Button('Update solver', id='update-solver-btn', n_clicks=0),
@@ -209,11 +252,7 @@ layout1 = html.Div(children=[
     html.Br(),
     html.Br(),
 
-    # Used to print out the newly calculated total score dataframe from
-    # the uploaded files. Should only be used for debugging and is not set 
-    # to be functional right now
-    html.Div(id='output-data-upload'),
-
+   
     # Print the solver matches for the selected partner below the partner table
     html.Div(id='partner-matches-list',
     children=[]),

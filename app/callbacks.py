@@ -8,7 +8,7 @@ import io
 # for creating the new total_score.xlsx
 from utils.create_total_score import create_total_score_excel
 from utils import utils_app
-
+from utils import zebra
 # for auth
 import dash_auth
 from flask import Flask 
@@ -74,24 +74,87 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         os.makedirs(config['outputs'])
 
     if list_of_contents is not None:
-        partner_solver_weights = pd.read_csv(config['current_weights'])
-        geo_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'geo_weights']], columns='solver', index='Org_y' )
-        needs_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'needs_weights']], columns='solver', index='Org_y' )
-        challenge_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'challenge_weights']], columns='solver', index='Org_y' )
-        stage_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'stage_weights']], columns='solver', index='Org_y' )
-       
-        # list_of_uploaded_files is fully available here
-        children = [
-            utils_app.parse_contents(c, n, d) for c, n, d in
-            zip(list_of_contents, list_of_names, list_of_dates)]
-       
-        new_total_score = create_total_score_excel(config['outputs'],
-                                                    geo_weights_pivot,
-                                                    needs_weights_pivot,
-                                                    challenge_weights_pivot, 
-                                                    stage_weights_pivot )
-        # new_total_score.insert(0, "Partners", Partners, True)
-        return None
+        number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
+        
+        if number_sheets == 3: 
+            partner_solver_weights = pd.read_csv(config['current_weights'])
+            geo_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'geo_weights']], columns='solver', index='Org_y' )
+            needs_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'needs_weights']], columns='solver', index='Org_y' )
+            challenge_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'challenge_weights']], columns='solver', index='Org_y' )
+            stage_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'stage_weights']], columns='solver', index='Org_y' )
+        
+            # List_of_uploaded_files is fully available here
+            number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
+
+            new_total_score = create_total_score_excel(config['outputs'],
+                                                        geo_weights_pivot,
+                                                        needs_weights_pivot,
+                                                        challenge_weights_pivot, 
+                                                        stage_weights_pivot )
+            # new_total_score.insert(0, "Partners", Partners, True)
+            children = "Generated outputs"
+        else: 
+            children = "Input file must be an excel file with three sheets- Solver Team Data, Partner Data, Initial Weights"     
+    else: 
+        children = "Input file must be an excel file with three sheets- Solver Team Data, Partner Data, Initial Weights"    
+    return children
+
+# copied 
+@app.callback(
+    dash.dependencies.Output('output-gen-weights', 'children'),
+    [dash.dependencies.Input('gen-weights', 'contents')],
+    [dash.dependencies.State('gen-weights', 'filename'),
+    dash.dependencies.State('gen-weights', 'last_modified')])
+def update_output2(list_of_contents, list_of_names, list_of_dates):
+    '''
+    param: contents - all of the files uploaded
+    param: filename - name of the uploaded file
+    param: last_modified - the date in which the file was last modified
+    return: irrelavent output, will never be printed out and is used to 
+    comply with needing an Output for every callback
+    '''
+
+    if os.path.exists(config['outputs']): 
+        shutil.rmtree(config['outputs'])
+        os.makedirs(config['outputs'])
+    else: 
+        os.makedirs(config['outputs'])
+
+    if list_of_contents is not None:
+        number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
+        solver_df =  pd.read_csv(config['solver_location'])
+        partners_df = pd.read_csv(config['partner_location'])
+        print(number_sheets)
+        if number_sheets <= 2: 
+            partner_solver_weights = zebra.inital_partner_solver_weights(solver_df, partners_df)
+            with pd.ExcelWriter(config['partner-solver-inital-weights'], mode='w') as writer: 
+                partner_solver_weights.to_excel(config['initial_weights'])
+                solver_df.to_excel(writer, sheet_name='Solver Team Data')
+                partners_df.to_excel(writer, sheet_name='Partner Data')
+                partner_solver_weights.to_excel(writer, sheet_name='Partner Solver Weights')
+
+            children = list_of_names
+            return children 
+        else: 
+            children = ['Nothing to return']
+            return children
+    children = list_of_names
+    return children
+
+
+@app.server.route('/download-weights/')
+def download_weights():
+    """ Download all files in the outputs folder 
+    :return: Zip file containing all the files in the outputs folder
+    :rtype: zip file
+    """
+    
+    return send_file(config['partner-solver-inital-weights'],
+            mimetype = 'xlsx',
+            attachment_filename= config['partner-solver-inital-weights'],
+            as_attachment = True)
+
+
 
 # This method allows for you to download all of the generated excel files as a zip file
 # Files are challenge_match.xlsx, geo_match.xlsx, needs_match.xlsx, stage_match.xlsx,
