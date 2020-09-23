@@ -31,6 +31,7 @@ def parse_contents(contents, filename, date):
     '''
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
+    number_sheets = 0 
     try:
         if 'csv' in filename:
             # Assume that the user uploaded a CSV file
@@ -41,6 +42,7 @@ def parse_contents(contents, filename, date):
             # Assume that the user uploaded an excel file
             
             decoded_data = io.BytesIO(decoded)
+            number_sheets = len(pd.ExcelFile(decoded_data).sheet_names)            
             solver_data = pd.read_excel(decoded_data, sheet_name="Solver Team Data")
             partner_data = pd.read_excel(decoded_data, sheet_name="Partner Data")
         
@@ -55,5 +57,5 @@ def parse_contents(contents, filename, date):
         ])
 
         
-    return None
+    return number_sheets
 

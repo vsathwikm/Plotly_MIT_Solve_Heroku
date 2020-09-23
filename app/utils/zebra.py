@@ -305,7 +305,7 @@ def pivot_table_challenges(ch_solver, ch_partners_reset, export_path, export=Fal
     
     
     challenges_pivot = merged_pivot_table.copy()
-    challenges_pivot = challenges_pivot.fillna(0)
+    challenges_pivot = challenges_pivot[challenges_pivot != 0] 
     challenges_pivot_nulled = challenges_pivot.isnull()
     
     for col in challenges_pivot_nulled.columns: 
@@ -393,6 +393,50 @@ def pivot_table_stage(st_solver, st_partners, export_path,  export=False):
         stage_pivot_copy.to_excel("".join([export_path, "/stage_match.xlsx" ]))
     
     return stage_pivot, stage_pivot_copy
+
+
+
+def inital_partner_solver_weights(solver_df, partners_df): 
+    # Get the partner and solve dataframes from the data source 
+    
+    # Get a cleaned verison the challenges table from partners
+    ch_partners_challenges = get_ch_partners(partners_df)
+
+    # Get Solver Challenges
+    ch_solver = get_ch_solvers(solver_df)
+
+    # Merge partners and solvers challenge needs
+    merged_df = pd.merge(ch_solver,
+                             ch_partners_challenges,
+                             left_on="Challenge",
+                             right_on='Challenge',
+                             how='outer')
+    # Generate a pivot table on partners and solvers using the merged dataset                          
+    merged_pivot_table = pd.pivot_table(merged_df,
+                                            values="Challenge",
+                                            index=["Org_y"],
+                                            columns=["Org_x"],
+                                            aggfunc=np.sum)
+
+
+    # Set all the values on the pivot table to 1 and reset index  
+    challenges_pivot = merged_pivot_table.copy()
+    challenges_pivot[:] = 1
+    challenges_pivot_unpivoted = challenges_pivot.reset_index()
+
+    # Unpivot the pivot table acquire a list containing partner and solver matches
+    unpivoted_inital_table = pd.melt(challenges_pivot_unpivoted, id_vars="Org_y")
+    zero_column = unpivoted_inital_table['value']
+    
+    # Assign new columns that contain inital scores for each key needs
+    unpivoted_inital_table = unpivoted_inital_table.assign(geo_score=zero_column, 
+                            challenge_score=zero_column,
+                            needs_score=zero_column, 
+                            stage_score=zero_column)
+
+    # Drop the value column since it we only care about the 4 needs created above                        
+    partners_solvers_weights =  unpivoted_inital_table.drop(columns='value')
+    return partners_solvers_weights
 
 
 if __name__ == "__main__":
