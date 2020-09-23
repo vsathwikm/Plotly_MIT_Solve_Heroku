@@ -19,6 +19,8 @@ layout1 = html.Div(children=[
     ),
     
     html.Div([
+        html.H2("Upload Excel files"),
+        html.H5("Upload an excel file with three sheets labeled: Solver Team Data, Partner Data, Initial Weights"),
         # Upload files button
         dcc.Upload(
             id='upload-data',
@@ -38,6 +40,8 @@ layout1 = html.Div(children=[
         # the uploaded files. Should only be used for debugging and is not set 
         # to be functional right now
         html.Div(id='output-data-upload'),
+        html.Br(),
+        html.H2("Generate weights from Partner-Solver Data"), 
         html.Div([
                     dcc.Upload(
                             id='gen-weights',

@@ -72,25 +72,32 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         os.makedirs(config['outputs'])
     else: 
         os.makedirs(config['outputs'])
+
     if list_of_contents is not None:
-        partner_solver_weights = pd.read_csv(config['current_weights'])
-        geo_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'geo_weights']], columns='solver', index='Org_y' )
-        needs_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'needs_weights']], columns='solver', index='Org_y' )
-        challenge_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'challenge_weights']], columns='solver', index='Org_y' )
-        stage_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'stage_weights']], columns='solver', index='Org_y' )
-       
-        # list_of_uploaded_files is fully available here
-        children = [
-            utils_app.parse_contents(c, n, d) for c, n, d in
-            zip(list_of_contents, list_of_names, list_of_dates)]
-       
-        new_total_score = create_total_score_excel(config['outputs'],
-                                                    geo_weights_pivot,
-                                                    needs_weights_pivot,
-                                                    challenge_weights_pivot, 
-                                                    stage_weights_pivot )
-        # new_total_score.insert(0, "Partners", Partners, True)
-        return None
+        number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
+        
+        if number_sheets == 3: 
+            partner_solver_weights = pd.read_csv(config['current_weights'])
+            geo_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'geo_weights']], columns='solver', index='Org_y' )
+            needs_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'needs_weights']], columns='solver', index='Org_y' )
+            challenge_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'challenge_weights']], columns='solver', index='Org_y' )
+            stage_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'stage_weights']], columns='solver', index='Org_y' )
+        
+            # List_of_uploaded_files is fully available here
+            number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
+
+            new_total_score = create_total_score_excel(config['outputs'],
+                                                        geo_weights_pivot,
+                                                        needs_weights_pivot,
+                                                        challenge_weights_pivot, 
+                                                        stage_weights_pivot )
+            # new_total_score.insert(0, "Partners", Partners, True)
+            children = "Generated outputs"
+        else: 
+            children = "Input file must be an excel file with three sheets- Solver Team Data, Partner Data, Initial Weights"     
+    else: 
+        children = "Input file must be an excel file with three sheets- Solver Team Data, Partner Data, Initial Weights"    
+    return children
 
 # copied 
 @app.callback(
@@ -115,7 +122,6 @@ def update_output2(list_of_contents, list_of_names, list_of_dates):
 
     if list_of_contents is not None:
         number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
-        
         solver_df =  pd.read_csv(config['solver_location'])
         partners_df = pd.read_csv(config['partner_location'])
         print(number_sheets)
