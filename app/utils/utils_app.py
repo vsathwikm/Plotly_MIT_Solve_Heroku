@@ -45,10 +45,11 @@ def parse_contents(contents, filename, date):
             number_sheets = len(pd.ExcelFile(decoded_data).sheet_names)            
             solver_data = pd.read_excel(decoded_data, sheet_name="Solver Team Data")
             partner_data = pd.read_excel(decoded_data, sheet_name="Partner Data")
-        
+            weights = pd.read_excel(decoded_data, sheet_name="Partner Solver Weights")
+
             solver_data.to_csv(config['solver_location'])
             partner_data.to_csv(config['partner_location'])
-
+            weights.to_csv(config['outputs'] + config['partner-solver-inital-weights'])
 
     except Exception as e:
         print(e)

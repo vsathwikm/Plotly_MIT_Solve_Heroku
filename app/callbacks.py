@@ -127,7 +127,7 @@ def update_output2(list_of_contents, list_of_names, list_of_dates):
         print(number_sheets)
         if number_sheets <= 2: 
             partner_solver_weights = zebra.inital_partner_solver_weights(solver_df, partners_df)
-            with pd.ExcelWriter(config['partner-solver-inital-weights'], mode='w') as writer: 
+            with pd.ExcelWriter(config['outputs'] + config['partner-solver-inital-weights'], mode='w') as writer: 
                 partner_solver_weights.to_excel(config['initial_weights'])
                 solver_df.to_excel(writer, sheet_name='Solver Team Data')
                 partners_df.to_excel(writer, sheet_name='Partner Data')
@@ -149,7 +149,7 @@ def download_weights():
     :rtype: zip file
     """
     
-    return send_file(config['partner-solver-inital-weights'],
+    return send_file(config['outputs'] + config['partner-solver-inital-weights'],
             mimetype = 'xlsx',
             attachment_filename= config['partner-solver-inital-weights'],
             as_attachment = True)
@@ -166,6 +166,16 @@ def download_all():
     :return: Zip file containing all the files in the outputs folder
     :rtype: zip file
     """
+    solver_df =  pd.read_csv(config['solver_location'])
+    partners_df = pd.read_csv(config['partner_location'])
+    partner_solver_weights = zebra.inital_partner_solver_weights(solver_df, partners_df)
+    print(config['outputs'] + config['partner-solver-inital-weights'])
+    with pd.ExcelWriter(config['outputs'] + config['partner-solver-inital-weights'], mode='w') as writer: 
+                partner_solver_weights.to_excel(config['initial_weights'])
+                solver_df.to_excel(writer, sheet_name='Solver Team Data')
+                partners_df.to_excel(writer, sheet_name='Partner Data')
+                partner_solver_weights.to_excel(writer, sheet_name='Partner Solver Weights')
+
     shutil.make_archive(config['zipf_name'], 'zip', 'outputs/')
     return send_file(config['zipped'],
             mimetype = 'zip',
@@ -472,7 +482,7 @@ def read_weights(clickData, solver):
         partner_name = clickData['points'][0]['y']
         if os.path.exists(config['current_weights']): 
          
-            partner_solver_weights = pd.read_csv(config['current_weights'])
+            partner_solver_weights = pd.read_excel(config['outputs'] +config['partner-solver-inital-weights'], sheet_name='partner-solver-init-weights')
             partner_solver_pair = partner_solver_weights[(partner_solver_weights['solver'] == solver) & (partner_solver_weights['Org_y'] == partner_name)]
             
             geo_weights = partner_solver_pair[['geo_weights']].astype(str).values.tolist()
@@ -498,7 +508,7 @@ def write_weights(clicks, gw, sw, cw, nw, clickData, solver_name):
         PreventUpdate
     else: 
         partner_name = clickData['points'][0]['y']
-        partner_solver_weights = pd.read_csv(config['current_weights'])
+        partner_solver_weights = pd.read_excel(config['outputs'] +config['partner-solver-inital-weights'], sheet_name='partner-solver-init-weights')
        
         # Add the entered weighted to weight matrix
         partner_solver_row = partner_solver_weights[(partner_solver_weights['solver'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['geo_weights'].index
@@ -506,7 +516,7 @@ def write_weights(clicks, gw, sw, cw, nw, clickData, solver_name):
         partner_solver_weights.loc[partner_solver_row, 'challenge_weights'] = cw
         partner_solver_weights.loc[partner_solver_row, 'needs_weights'] = nw
         partner_solver_weights.loc[partner_solver_row, 'stage_weights'] = sw
-        partner_solver_weights.to_csv(config['current_weights'], index=False)
+        partner_solver_weights.to_excel(config['outputs'] +config['partner-solver-inital-weights'], index=False)
         return None 
 
 @app.callback(Output("hidden-div", "children"),
