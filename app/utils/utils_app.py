@@ -47,7 +47,7 @@ def parse_contents(contents, filename, date):
             partner_data = pd.read_excel(decoded_data, sheet_name="Partner Data")
             try:
                 weights = pd.read_excel(decoded_data, sheet_name="Partner Solver Weights")
-                weights.to_excel(config['outputs'] + config['partner-solver-inital-weights'], index=False)
+                weights.to_excel(config['outputs'] + config['partner-solver-inital-weights'], sheet_name='Partner Solver Weights', index=False)
             except: 
                 pass
             solver_data.to_csv(config['solver_location'], index=False)

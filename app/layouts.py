@@ -176,7 +176,6 @@ layout1 = html.Div(children=[
             ),
         ], className="four columns"),      
     ], className="row"),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.Button('Submit Changes to Weights', id='submit-val', n_clicks=0),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.Div(id='confirmation-text',
@@ -185,7 +184,6 @@ layout1 = html.Div(children=[
 
 
     # Generate Weights 
-    html.Button("Generate weights", id="generate-weights", n_clicks=0), 
     html.Div(id="weights-hidden", style={"display":"none"}), 
 
     # Generates the table for the selected solver
