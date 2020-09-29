@@ -10,6 +10,11 @@ from dash.dependencies import Output, Input
 
 # APP LAYOUT
 layout1 = html.Div(children=[
+
+
+
+
+
     html.H1(
         children='MIT SOLVE',
         style={

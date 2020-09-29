@@ -214,10 +214,25 @@ def dropdown_options(n_clicks, list_of_contents, list_of_names, list_of_dates):
         for x in solvers: 
             single_dict = {'label': x, 'value': x }
             options.append(single_dict)
-
-        
         dropvalue = "Select.."
+
         return [dropvalue, options]
+
+# @app.callback([Output("geo-weight", "value"),
+#     Output("stage-weight", "value"), 
+#     Output("challenge-weight", "value"), 
+#     Output("needs-weight", "value")], 
+#     [Input('solver-dropdown', 'value')]
+#     )
+# def dropdown_updates_weights(dropdown_value): 
+#     partner_solver_weights = pd.read_excel(config['outputs'] +config['partner-solver-inital-weights'])
+#     partner_solver_pair = partner_solver_weights[(partner_solver_weights['Org_x'] == solver) & (partner_solver_weights['Org_y'] == partner_name)]
+
+#     geo_weights = partner_solver_pair[['geo_weights']].astype(str).values.tolist()
+#     needs_weights = partner_solver_pair[['needs_weights']].astype(str).values.tolist()
+#     stage_weights = partner_solver_pair[['stage_weights']].astype(str).values.tolist()
+#     challenge_weights = partner_solver_pair[['challenge_weights']].astype(str).values.tolist()
+
 
 
 # This method updates the graph when a new solver is selected from the dropdown
@@ -475,7 +490,7 @@ def partner_select(n_clicks, solver,  table_partner):
                  Input('solver-dropdown', 'value')])
 def read_weights(clickData, solver): 
    
-    if clickData: 
+    # if clickData: 
         partner_name = clickData['points'][0]['y']
         
         if os.path.exists(config['outputs'] +config['partner-solver-inital-weights']): 
@@ -502,20 +517,18 @@ def read_weights(clickData, solver):
                 [State('solver-dropdown', 'value')]
                )
 def write_weights(clicks, gw, sw, cw, nw, clickData, solver_name): 
-    if clicks is None: 
-        PreventUpdate
-    else: 
-        partner_name = clickData['points'][0]['y']
-        partner_solver_weights = pd.read_excel(config['output_weights'])
-       
-        # Add the entered weighted to weight matrix
-        partner_solver_row = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['geo_weights'].index
-        partner_solver_weights.loc[partner_solver_row, 'geo_weights'] = gw
-        partner_solver_weights.loc[partner_solver_row, 'challenge_weights'] = cw
-        partner_solver_weights.loc[partner_solver_row, 'needs_weights'] = nw
-        partner_solver_weights.loc[partner_solver_row, 'stage_weights'] = sw
-        partner_solver_weights.to_excel(config['outputs'] +config['partner-solver-inital-weights'], index=False)
-        return None 
+
+    partner_name = clickData['points'][0]['y']
+    partner_solver_weights = pd.read_excel(config['output_weights'])
+    
+    # Add the entered weighted to weight matrix
+    partner_solver_row = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['geo_weights'].index
+    partner_solver_weights.loc[partner_solver_row, 'geo_weights'] = gw
+    partner_solver_weights.loc[partner_solver_row, 'challenge_weights'] = cw
+    partner_solver_weights.loc[partner_solver_row, 'needs_weights'] = nw
+    partner_solver_weights.loc[partner_solver_row, 'stage_weights'] = sw
+    partner_solver_weights.to_excel(config['outputs'] +config['partner-solver-inital-weights'], index=False)
+    return None 
 
 @app.callback(Output("hidden-div", "children"),
                 [Input("submit-val", "n_clicks"), 
@@ -527,9 +540,7 @@ def write_weights(clicks, gw, sw, cw, nw, clickData, solver_name):
                 [State('solver-dropdown', 'value')]
                )
 def update_total_score(clicks, gw, sw, cw, nw, clickData, solver_name):
-    if clicks is None: 
-        PreventUpdate
-    else: 
+
         partner_name = clickData['points'][0]['y']
        
         # Get total score from excel sheet
