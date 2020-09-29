@@ -75,17 +75,15 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
 
     if list_of_contents is not None:
         number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
-        
         if number_sheets == 3: 
-            partner_solver_weights = pd.read_csv(config['current_weights'])
-            geo_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'geo_weights']], columns='solver', index='Org_y' )
-            needs_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'needs_weights']], columns='solver', index='Org_y' )
-            challenge_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'challenge_weights']], columns='solver', index='Org_y' )
-            stage_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'solver', 'stage_weights']], columns='solver', index='Org_y' )
+            partner_solver_weights = pd.read_excel(config['output_weights'])
+            print(partner_solver_weights.columns)
+            geo_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'geo_weights']], columns='Org_x', index='Org_y' )
+            needs_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'needs_weights']], columns='Org_x', index='Org_y' )
+            challenge_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'challenge_weights']], columns='Org_x', index='Org_y' )
+            stage_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'stage_weights']], columns='Org_x', index='Org_y' )
         
             # List_of_uploaded_files is fully available here
-            number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
-
             new_total_score = create_total_score_excel(config['outputs'],
                                                         geo_weights_pivot,
                                                         needs_weights_pivot,
@@ -128,10 +126,10 @@ def update_output2(list_of_contents, list_of_names, list_of_dates):
         if number_sheets <= 2: 
             partner_solver_weights = zebra.inital_partner_solver_weights(solver_df, partners_df)
             with pd.ExcelWriter(config['outputs'] + config['partner-solver-inital-weights'], mode='w') as writer: 
-                partner_solver_weights.to_excel(config['initial_weights'])
-                solver_df.to_excel(writer, sheet_name='Solver Team Data')
-                partners_df.to_excel(writer, sheet_name='Partner Data')
-                partner_solver_weights.to_excel(writer, sheet_name='Partner Solver Weights')
+                partner_solver_weights.to_excel(config['initial_weights'], index=False)
+                solver_df.to_excel(writer, sheet_name='Solver Team Data', index=False)
+                partners_df.to_excel(writer, sheet_name='Partner Data', index=False)
+                partner_solver_weights.to_excel(writer, sheet_name='Partner Solver Weights', index=False)
 
             children = list_of_names
             return children 
@@ -148,6 +146,7 @@ def download_weights():
     :return: Zip file containing all the files in the outputs folder
     :rtype: zip file
     """
+
     
     return send_file(config['outputs'] + config['partner-solver-inital-weights'],
             mimetype = 'xlsx',
@@ -171,7 +170,7 @@ def download_all():
     partner_solver_weights = zebra.inital_partner_solver_weights(solver_df, partners_df)
     print(config['outputs'] + config['partner-solver-inital-weights'])
     with pd.ExcelWriter(config['outputs'] + config['partner-solver-inital-weights'], mode='w') as writer: 
-                partner_solver_weights.to_excel(config['initial_weights'])
+                partner_solver_weights.to_excel(config['output_weights'])
                 solver_df.to_excel(writer, sheet_name='Solver Team Data')
                 partners_df.to_excel(writer, sheet_name='Partner Data')
                 partner_solver_weights.to_excel(writer, sheet_name='Partner Solver Weights')
@@ -238,7 +237,7 @@ def update_graph_from_solver_dropdown(value, n_clicks):
     :return: Plotly bar chart showing the top 5 Partner matches for the selected Solver
     :rtype: Figure
     """
-    
+    time.sleep(0.1)
     # while not os.path.exists(config['total_score_location']): 
     #     time.sleep(0.01)
     # Checks if new files have been uploaded yet instead of hard coded
@@ -275,7 +274,7 @@ def update_individual_graph(clickData, n_clicks, solver_name):
     # Check to make sure a partnere is selected
     if clickData != None:
         # Must get value for partner compared to solver in: geo, needs, stage, challenge
-        partner_solver_weights = pd.read_csv(config['current_weights'])
+        partner_solver_weights = pd.read_excel(config['outputs'] +config['partner-solver-inital-weights'])
 
         partner_name = clickData['points'][0]['y']
 
@@ -291,10 +290,10 @@ def update_individual_graph(clickData, n_clicks, solver_name):
         challenge_df = pd.read_excel(config['challenge_match'])
         challenge_value = float(challenge_df[challenge_df["Org_y"]==partner_name].iloc[0][solver_name])
 
-        cw = partner_solver_weights[(partner_solver_weights['solver'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['challenge_weights'].values[0]
-        gw = partner_solver_weights[(partner_solver_weights['solver'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['geo_weights'].values[0]
-        nw = partner_solver_weights[(partner_solver_weights['solver'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['needs_weights'].values[0]
-        sw = partner_solver_weights[(partner_solver_weights['solver'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['stage_weights'].values[0]
+        cw = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['challenge_weights'].values[0]
+        gw = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['geo_weights'].values[0]
+        nw = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['needs_weights'].values[0]
+        sw = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['stage_weights'].values[0]
         
         challenge_term = float(cw)*float(config['challenge_weight'])*challenge_value
         needs_term =  float(nw)*float(config['needs_weight'])*needs_value
@@ -437,36 +436,36 @@ def partner_select(n_clicks, solver,  table_partner):
             return style_cell    
 
 
-@app.callback(Output("weights-hidden", "children"), 
-              [Input("generate-weights", "n_clicks")])
-def generate_weights(n_clicks):
-    """
-    Generate list of weights for partner solver pair.
-    """
-    if n_clicks is None: 
-        PreventUpdate
-    else: 
+# @app.callback(Output("weights-hidden", "children"), 
+#               [Input("generate-weights", "n_clicks")])
+# def generate_weights(n_clicks):
+#     """
+#     Generate list of weights for partner solver pair.
+#     """
+#     if n_clicks is None: 
+#         PreventUpdate
+#     else: 
 
-        if not os.path.exists(config['initial_weights']): 
+#         if not os.path.exists(config['initial_weights']): 
 
-            data_df = pd.read_excel(config['total_score_location'])
-            unpivoted_inital_table = pd.melt(data_df, id_vars="Org_y")
-            zero_column = unpivoted_inital_table['value']
-            unpivoted_inital_table = unpivoted_inital_table.assign(geo_score=zero_column, 
-                                    challenge_score=zero_column,
-                                    needs_score=zero_column, 
-                                    stage_score=zero_column)
-            partners_solvers_weights =  unpivoted_inital_table.drop(columns='value')
-            partners_solvers_weights = partners_solvers_weights.rename(columns={"variable":"solver",
-                                                                                 "geo_score":"geo_weights",
-                                                                                 "challenge_score": "challenge_weights",
-                                                                                 "needs_score":"needs_weights",
-                                                                                 "stage_score":"stage_weights"})
-            cols = ["geo_weights", "challenge_weights", "needs_weights", "stage_weights"] 
-            for col in cols:
-                partners_solvers_weights[col].values[:] = 1                                                                    
-            partners_solvers_weights.to_csv(config['current_weights'])
-        return None 
+#             data_df = pd.read_excel(config['total_score_location'])
+#             unpivoted_inital_table = pd.melt(data_df, id_vars="Org_y")
+#             zero_column = unpivoted_inital_table['value']
+#             unpivoted_inital_table = unpivoted_inital_table.assign(geo_score=zero_column, 
+#                                     challenge_score=zero_column,
+#                                     needs_score=zero_column, 
+#                                     stage_score=zero_column)
+#             partners_solvers_weights =  unpivoted_inital_table.drop(columns='value')
+#             partners_solvers_weights = partners_solvers_weights.rename(columns={"variable":"solver",
+#                                                                                  "geo_score":"geo_weights",
+#                                                                                  "challenge_score": "challenge_weights",
+#                                                                                  "needs_score":"needs_weights",
+#                                                                                  "stage_score":"stage_weights"})
+#             cols = ["geo_weights", "challenge_weights", "needs_weights", "stage_weights"] 
+#             for col in cols:
+#                 partners_solvers_weights[col].values[:] = 1                                                                    
+#             partners_solvers_weights.to_csv(config['current_weights'])
+#         return None 
 
 
 
@@ -482,8 +481,8 @@ def read_weights(clickData, solver):
         partner_name = clickData['points'][0]['y']
         if os.path.exists(config['current_weights']): 
          
-            partner_solver_weights = pd.read_excel(config['outputs'] +config['partner-solver-inital-weights'], sheet_name='partner-solver-init-weights')
-            partner_solver_pair = partner_solver_weights[(partner_solver_weights['solver'] == solver) & (partner_solver_weights['Org_y'] == partner_name)]
+            partner_solver_weights = pd.read_excel(config['outputs'] +config['partner-solver-inital-weights'])
+            partner_solver_pair = partner_solver_weights[(partner_solver_weights['Org_x'] == solver) & (partner_solver_weights['Org_y'] == partner_name)]
             
             geo_weights = partner_solver_pair[['geo_weights']].astype(str).values.tolist()
             needs_weights = partner_solver_pair[['needs_weights']].astype(str).values.tolist()
@@ -508,10 +507,11 @@ def write_weights(clicks, gw, sw, cw, nw, clickData, solver_name):
         PreventUpdate
     else: 
         partner_name = clickData['points'][0]['y']
-        partner_solver_weights = pd.read_excel(config['outputs'] +config['partner-solver-inital-weights'], sheet_name='partner-solver-init-weights')
+        print("Reading weights file location {}".format(config['outputs'] +config['partner-solver-inital-weights']))
+        partner_solver_weights = pd.read_excel(config['output_weights'])
        
         # Add the entered weighted to weight matrix
-        partner_solver_row = partner_solver_weights[(partner_solver_weights['solver'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['geo_weights'].index
+        partner_solver_row = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['geo_weights'].index
         partner_solver_weights.loc[partner_solver_row, 'geo_weights'] = gw
         partner_solver_weights.loc[partner_solver_row, 'challenge_weights'] = cw
         partner_solver_weights.loc[partner_solver_row, 'needs_weights'] = nw

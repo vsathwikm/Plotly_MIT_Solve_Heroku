@@ -429,10 +429,10 @@ def inital_partner_solver_weights(solver_df, partners_df):
     zero_column = unpivoted_inital_table['value']
     
     # Assign new columns that contain inital scores for each key needs
-    unpivoted_inital_table = unpivoted_inital_table.assign(geo_score=zero_column, 
-                            challenge_score=zero_column,
-                            needs_score=zero_column, 
-                            stage_score=zero_column)
+    unpivoted_inital_table = unpivoted_inital_table.assign(geo_weights=zero_column, 
+                            challenge_weights=zero_column,
+                            needs_weights=zero_column, 
+                            stage_weights=zero_column)
 
     # Drop the value column since it we only care about the 4 needs created above                        
     partners_solvers_weights =  unpivoted_inital_table.drop(columns='value')
