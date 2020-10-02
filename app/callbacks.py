@@ -267,8 +267,8 @@ def update_graph_from_solver_dropdown(value, n_clicks):
     [Output('individual_graph', 'figure'),
     Output('individual_graph_title', 'children')],
     [Input('output_bargraph', 'clickData'),
-     Input('submit-val', 'n_clicks') ],
-    [State('solver-dropdown', 'value')]
+     Input('submit-val', 'n_clicks'),
+    Input('solver-dropdown', 'value')]
     )
 def update_individual_graph(clickData, n_clicks, solver_name):
     '''
@@ -277,8 +277,13 @@ def update_individual_graph(clickData, n_clicks, solver_name):
     return: figure (Plotly Express Bar Chart) - individual graph of category values
     return: children (str) - customized title for individual graph
     '''
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if "solver-dropdown" in changed_id: 
+        figure={'data': []}
+        return [figure, '']
+        
     # Check to make sure a partnere is selected
-    if clickData != None:
+    if clickData != None and "output_bargraph" in changed_id:
         # Must get value for partner compared to solver in: geo, needs, stage, challenge
         partner_solver_weights = pd.read_excel(config['outputs'] +config['partner-solver-inital-weights'], sheet_name='Partner Solver Weights')
 
