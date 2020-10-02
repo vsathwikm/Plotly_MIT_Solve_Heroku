@@ -99,14 +99,14 @@ layout1 = html.Div(children=[
     html.Br(), 
 
     # Download all excel files button
-    html.Div([
-        html.A(html.Button('Download All Excel Files'), href="/download_all/",
-        ),
-    ],
-    style={
-        'height': '60px',
-        'textAlign': 'center',
-    }),
+    # html.Div([
+    #     html.A(html.Button('Download All Excel Files'), href="/download_all/",
+    #     ),
+    # ],
+    # style={
+    #     'height': '60px',
+    #     'textAlign': 'center',
+    # }),
 
    
 
@@ -280,5 +280,17 @@ layout1 = html.Div(children=[
         style={'width': '50%', 'height': 200, 'Align-items': 'center'},
     ),
     html.Div([html.Button("Add Comment", id="confirm-comment-button")]),
-    html.Div(id='comment-status')
+    html.Div(id='comment-status'),
+    html.Br(),
+    html.Br(),
+     html.A(
+        'Download Data',
+        id='download-link',
+        download="MIT_Solve_Excel_Files.zip",
+        href="",
+        target="_blank", 
+        n_clicks= 0
+    )
+
+
 ])

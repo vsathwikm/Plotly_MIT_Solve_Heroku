@@ -166,27 +166,27 @@ def download_weights():
 # Files are challenge_match.xlsx, geo_match.xlsx, needs_match.xlsx, stage_match.xlsx,
 # total_score_from_upload.xlsx and mit_solve_confirmed_matches.xlsx
 # TODO make sure the correct files are being uploaded - think wrong ones are right now
-@app.server.route('/download_all/')
-def download_all():
-    """ Download all files in the outputs folder 
-    :return: Zip file containing all the files in the outputs folder
-    :rtype: zip file
-    """
-    solver_df =  pd.read_csv(config['solver_location'])
-    partners_df = pd.read_csv(config['partner_location'])
-    partner_solver_weights = pd.read_excel(config['outputs'] + config['partner-solver-inital-weights'])
-    partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
+# @app.server.route('/download_all/')
+# def download_all():
+#     """ Download all files in the outputs folder 
+#     :return: Zip file containing all the files in the outputs folder
+#     :rtype: zip file
+#     """
+#     solver_df =  pd.read_csv(config['solver_location'])
+#     partners_df = pd.read_csv(config['partner_location'])
+#     partner_solver_weights = pd.read_excel(config['outputs'] + config['partner-solver-inital-weights'])
+#     partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
    
-    with pd.ExcelWriter(config['output_weights'], mode='w') as writer: 
-                solver_df.to_excel(writer, sheet_name='Solver Team Data', index=False)
-                partners_df.to_excel(writer, sheet_name='Partner Data', index=False)
-                partner_solver_weights.to_excel(writer, sheet_name='Partner Solver Weights', index=False)
-                partner_match_count.to_excel(writer, sheet_name="Partner Match", index=False)
-    shutil.make_archive(config['zipf_name'], 'zip', 'outputs/')
-    return send_file(config['zipped'],
-            mimetype = 'zip',
-            attachment_filename= config['zipped'],
-            as_attachment = True)
+#     with pd.ExcelWriter(config['output_weights'], mode='w') as writer: 
+#                 solver_df.to_excel(writer, sheet_name='Solver Team Data', index=False)
+#                 partners_df.to_excel(writer, sheet_name='Partner Data', index=False)
+#                 partner_solver_weights.to_excel(writer, sheet_name='Partner Solver Weights', index=False)
+#                 partner_match_count.to_excel(writer, sheet_name="Partner Match", index=False)
+#     shutil.make_archive(config['zipf_name'], 'zip', 'outputs/')
+#     return send_file(config['zipped'],
+#             mimetype = 'zip',
+#             attachment_filename= config['zipped'],
+#             as_attachment = True)
 
 
 
@@ -611,7 +611,29 @@ def popluate_comment_box(partner_state, solver):
         return comments
     
 
-
+@app.callback(
+    Output('download-link', 'href'),
+    [Input('download-link', 'n_clicks')])
+def download_update(n_clicks): 
+    return  '/dash/urldownload'
+@app.server.route('/dash/urldownload')
+def download_update():
+    
+    solver_df =  pd.read_csv(config['solver_location'])
+    partners_df = pd.read_csv(config['partner_location'])
+    partner_solver_weights = pd.read_excel(config['outputs'] + config['partner-solver-inital-weights'])
+    partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
+   
+    with pd.ExcelWriter(config['output_weights'], mode='w') as writer: 
+                solver_df.to_excel(writer, sheet_name='Solver Team Data', index=False)
+                partners_df.to_excel(writer, sheet_name='Partner Data', index=False)
+                partner_solver_weights.to_excel(writer, sheet_name='Partner Solver Weights', index=False)
+                partner_match_count.to_excel(writer, sheet_name="Partner Match", index=False)
+    shutil.make_archive(config['zipf_name'], 'zip', 'outputs/')
+    return send_file(config['zipped'],
+            mimetype = 'zip',
+            attachment_filename= config['zipped'],
+            as_attachment = True)
 
 # @app.callback(dash.dependencies.Output('confirm-yes-button', 'style'), 
 #             [dash.dependencies.Input('solver-dropdown', 'value'), 
