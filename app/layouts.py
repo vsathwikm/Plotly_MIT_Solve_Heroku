@@ -8,8 +8,14 @@ import dash
 import plotly.graph_objects as go
 from dash.dependencies import Output, Input
 
+
 # APP LAYOUT
 layout1 = html.Div(children=[
+
+
+
+
+
     html.H1(
         children='MIT SOLVE',
         style={
@@ -93,14 +99,14 @@ layout1 = html.Div(children=[
     html.Br(), 
 
     # Download all excel files button
-    html.Div([
-        html.A(html.Button('Download All Excel Files'), href="/download_all/",
-        ),
-    ],
-    style={
-        'height': '60px',
-        'textAlign': 'center',
-    }),
+    # html.Div([
+    #     html.A(html.Button('Download All Excel Files'), href="/download_all/",
+    #     ),
+    # ],
+    # style={
+    #     'height': '60px',
+    #     'textAlign': 'center',
+    # }),
 
    
 
@@ -171,7 +177,6 @@ layout1 = html.Div(children=[
             ),
         ], className="four columns"),      
     ], className="row"),
-    html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.Button('Submit Changes to Weights', id='submit-val', n_clicks=0),
     html.P(children=html.Br(), style={'textAlign': 'center'}),
     html.Div(id='confirmation-text',
@@ -180,7 +185,6 @@ layout1 = html.Div(children=[
 
 
     # Generate Weights 
-    html.Button("Generate weights", id="generate-weights", n_clicks=0), 
     html.Div(id="weights-hidden", style={"display":"none"}), 
 
     # Generates the table for the selected solver
@@ -230,14 +234,18 @@ layout1 = html.Div(children=[
     
 
     html.Div([ 
-            html.Div([html.Button("Yes", id="confirm-yes-button")])
+            html.Div([html.Button("Yes", id="confirm-yes-button")]), 
+            html.Div([html.Button("Delete", id="confirm-delete-button")]), 
+            html.Div(id="confirm-msg")
     ],
         className="row",
         style={
         'height': '60px',
         'textAlign': 'center',
-    }),
+        }, 
+    ),
 
+    html.Br(), 
 
     # A line break to make dashboard less crowded
     html.P(children=html.Br(), style={'textAlign': 'center'}),
@@ -267,8 +275,22 @@ layout1 = html.Div(children=[
 
     # Comment box
     dcc.Textarea(
-        id='textarea-for-comments',
+        id='comment-box',
         value='Text area for comments', # initial value
         style={'width': '50%', 'height': 200, 'Align-items': 'center'},
     ),
+    html.Div([html.Button("Add Comment", id="confirm-comment-button")]),
+    html.Div(id='comment-status'),
+    html.Br(),
+    html.Br(),
+     html.A(
+        'Download Data',
+        id='download-link',
+        download="MIT_Solve_Excel_Files.zip",
+        href="",
+        target="_blank", 
+        n_clicks= 0
+    )
+
+
 ])

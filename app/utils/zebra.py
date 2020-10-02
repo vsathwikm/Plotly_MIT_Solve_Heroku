@@ -429,15 +429,55 @@ def inital_partner_solver_weights(solver_df, partners_df):
     zero_column = unpivoted_inital_table['value']
     
     # Assign new columns that contain inital scores for each key needs
-    unpivoted_inital_table = unpivoted_inital_table.assign(geo_score=zero_column, 
-                            challenge_score=zero_column,
-                            needs_score=zero_column, 
-                            stage_score=zero_column)
+    unpivoted_inital_table = unpivoted_inital_table.assign(geo_weights=zero_column, 
+                            challenge_weights=zero_column,
+                            needs_weights=zero_column, 
+                            stage_weights=zero_column)
 
     # Drop the value column since it we only care about the 4 needs created above                        
     partners_solvers_weights =  unpivoted_inital_table.drop(columns='value')
     return partners_solvers_weights
 
+
+def update_colval(df,add_term, row_val, col, col2): 
+    col_indx = df[df[col] == row_val].index.values[0]
+    cell_val = df.at[col_indx, col2]
+    cell_val = cell_val.split(',')
+    if add_term in cell_val: 
+        return  1 
+    else: 
+        cell_val.append(add_term)
+        count_value = len(cell_val)-1 
+        cell_val = ",".join(cell_val)
+        df.at[col_indx, col2] = cell_val
+        df.at[col_indx, 'Count'] =  count_value 
+        return df, count_value
+
+def delete_colval(df,delete_term, row_val, col, col2): 
+    col_indx = df[df[col] == row_val].index.values[0]
+    cell_val = df.at[col_indx, col2]
+    cell_val = cell_val.split(',')
+    if delete_term in cell_val: 
+        cell_val.remove(delete_term)
+        count_value = len(cell_val)-1 
+        cell_val = ",".join(cell_val)
+        df.at[col_indx, col2] = cell_val
+        df.at[col_indx, 'Count'] =  count_value
+        return df, count_value
+
+    else: 
+        return 0
+    
+
+def check_solver(df, partner, solver, solver_col="Solvers", partner_col="Partners" ):
+    row_indx = df[df[partner_col] == partner].index.values[0]
+    cell_val = df.at[row_indx, solver_col]
+    cell_val = cell_val.split(',')
+   
+    if solver in cell_val: 
+        return 1 
+    else: 
+        return 0
 
 if __name__ == "__main__":
     print(get_regions_dict())
