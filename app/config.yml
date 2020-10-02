@@ -14,7 +14,7 @@ track_partners: 'outputs/partners_list.csv'
 initial_weights: 'inital_weights.xlsx'
 current_weights: 'solver_partner_weights.csv'
 partner-solver-inital-weights: 'partner-solver-init-weights.xlsx'
-output_weights: 'outputs/partner-solver-weights.xlsx'
+output_weights: 'outputs/partner-solver-all-sheets.xlsx'
 partner_match: "outputs/partner_match.xlsx"
 max_matches: 5
 partner_thres: 0

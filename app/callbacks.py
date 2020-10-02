@@ -175,11 +175,13 @@ def download_all():
     solver_df =  pd.read_csv(config['solver_location'])
     partners_df = pd.read_csv(config['partner_location'])
     partner_solver_weights = pd.read_excel(config['outputs'] + config['partner-solver-inital-weights'])
+    partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
+   
     with pd.ExcelWriter(config['output_weights'], mode='w') as writer: 
                 solver_df.to_excel(writer, sheet_name='Solver Team Data', index=False)
                 partners_df.to_excel(writer, sheet_name='Partner Data', index=False)
                 partner_solver_weights.to_excel(writer, sheet_name='Partner Solver Weights', index=False)
-
+                partner_match_count.to_excel(writer, sheet_name="Partner Match", index=False)
     shutil.make_archive(config['zipf_name'], 'zip', 'outputs/')
     return send_file(config['zipped'],
             mimetype = 'zip',
@@ -454,11 +456,12 @@ def update_total_score(clicks, gw, sw, cw, nw, clickData, solver_name):
 
 
 # Click on the partner button to generate partners list and save the match in the document
-@app.callback(dash.dependencies.Output('confirm-yes-button', 'style'),
-            [dash.dependencies.Input('confirm-yes-button', 'n_clicks'),
-             dash.dependencies.Input('output_bargraph', 'clickData'),
-            dash.dependencies.Input('solver-dropdown', 'value')])
-def partner_select(n_clicks, partner_state,  solver): 
+@app.callback(Output('confirm-yes-button', 'style'),
+            [Input('confirm-yes-button', 'n_clicks'),
+             Input('output_bargraph', 'clickData'),
+             Input('solver-dropdown', 'value'),
+             Input('confirm-delete-button', 'n_clicks')])
+def partner_select(n_clicks, partner_state,  solver, delete_button): 
     if n_clicks is None: 
         raise PreventUpdate
     else:   
@@ -470,6 +473,7 @@ def partner_select(n_clicks, partner_state,  solver):
         
         partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match") 
         changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
         if "output_bargraph" in changed_id: 
             partner_name =  partner_state['points'][0]['y']       
             # Check partner is already partnered with solver 
@@ -494,40 +498,77 @@ def partner_select(n_clicks, partner_state,  solver):
             if outputs != 1: 
                 partner_match_output = outputs[0]
                 partner_match_output.to_excel(config['partner_match'], sheet_name="Partner Match", index=False)
-                style={
+            style={
                         'height': '60px',
                         'textAlign': 'center',
                         'background-color': 'green'
+                }        
+        elif "confirm-delete-button" in changed_id: 
+            style={
+                        'height': '60px',
+                        'textAlign': 'center',
+                        'background-color': 'white'
                 }
-          
+              
     return style
 
 
 
-@app.callback(dash.dependencies.Output('confirm-msg', 'children'), 
-            [dash.dependencies.Input('confirm-delete-button', 'n_clicks'),
-              dash.dependencies.Input('output_bargraph', 'clickData'), 
-              dash.dependencies.State('solver-dropdown', 'value'),])
+@app.callback(Output('confirm-msg', 'children'), 
+            [Input('confirm-delete-button', 'n_clicks'),
+              Input('output_bargraph', 'clickData'), 
+              State('solver-dropdown', 'value')])
 def partner_delete(n_clicks, partner_state, solver  ): 
     if n_clicks is None: 
         raise PreventUpdate
-    else:    
+    else:   
+       
+        partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
         changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-        
         msg = " "        
         if "confirm-delete-button" in changed_id: 
-            partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
             partner_name =  partner_state['points'][0]['y']       
             outputs = zebra.delete_colval(partner_match_count, solver, partner_name, "Partners", "Solvers")
             if outputs != 0: 
                 partner_match_output = outputs[0]
                 partner_match_output.to_excel(config['partner_match'], sheet_name="Partner Match", index=False)
                 msg = "Deleted value"
+              
             else: 
                 msg = "Nothing to delete"
+              
     return msg
 
 
+@app.callback(Output('clicked_on_partner_table', 'style_cell'),
+            [Input('confirm-yes-button', 'n_clicks'),
+             Input('confirm-delete-button', 'n_clicks'),
+             Input('output_bargraph', 'clickData'), 
+             State('solver-dropdown', 'value')])
+def style_partner_table(yes_button, delete_button, partner_click, solver): 
+    partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
+    style_cell={
+                'whiteSpace': 'normal',
+                'height': 'auto',
+                'textAlign': 'center',
+                'font_family': 'helvetica',
+                'font_size': '20px',
+            }   
+    if partner_click:
+        partner_name=  partner_click['points'][0]['y']  
+        col_indx = partner_match_count[partner_match_count['Partners'] == partner_name].index.values[0]
+        cell_val = partner_match_count.at[col_indx, "Solvers"]
+        cell_val = cell_val.split(',')
+        count = len(cell_val)
+        
+        if count <= 2: 
+            style_cell['color'] = 'green'
+        elif count >2 and count <= 4:
+            style_cell['color'] = 'blue'
+        else:
+            style_cell['color'] = 'red'
+        
+    return style_cell
 # @app.callback(dash.dependencies.Output('confirm-yes-button', 'style'), 
 #             [dash.dependencies.Input('solver-dropdown', 'value'), 
 #              dash.dependencies.Input('output_bargraph', 'clickData')])
