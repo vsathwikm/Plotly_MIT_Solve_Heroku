@@ -34,7 +34,6 @@ import pandas as pd
 import dash
 import plotly.graph_objects as go
 from dash.dependencies import Output, Input, State
-import dash_bootstrap_components as dbc
 
 # writing to excel files
 import openpyxl
