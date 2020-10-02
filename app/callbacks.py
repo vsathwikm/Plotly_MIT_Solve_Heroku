@@ -130,7 +130,8 @@ def update_output2(list_of_contents, list_of_names, list_of_dates):
             partner_names = partners_df['Org'].values
             none_list = ['None' for x in range(0,num_partners)]
             count_list = [0 for x in range(0, num_partners)]
-            partners_match_count = pd.DataFrame(data=[partner_names, none_list, count_list], index=['Partners', 'Solvers', 'Count']).T
+            comments_list = ['None' for x in range(0, num_partners)]
+            partners_match_count = pd.DataFrame(data=[partner_names, none_list, count_list, comments_list], index=['Partners', 'Solvers', 'Count', 'Comments']).T
             with pd.ExcelWriter(config['output_weights'], mode='w') as writer: 
                 solver_df.to_excel(writer, sheet_name='Solver Team Data', index=False)
                 partners_df.to_excel(writer, sheet_name='Partner Data', index=False)
@@ -281,7 +282,7 @@ def update_individual_graph(clickData, n_clicks, solver_name):
     if "solver-dropdown" in changed_id: 
         figure={'data': []}
         return [figure, '']
-        
+
     # Check to make sure a partnere is selected
     if clickData != None and "output_bargraph" in changed_id:
         # Must get value for partner compared to solver in: geo, needs, stage, challenge
@@ -574,6 +575,44 @@ def style_partner_table(yes_button, delete_button, partner_click, solver):
             style_cell['color'] = 'red'
         
     return style_cell
+
+
+@app.callback(Output('comment-status','children' ),
+              [Input('comment-box', 'value'), 
+              Input('confirm-comment-button','n_clicks'),
+              Input('output_bargraph', 'clickData'), 
+              Input('solver-dropdown', 'value')])
+def add_comments(comments, comment_btn, partner_state, solver ): 
+    partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    partner_name = partner_state['points'][0]['y']
+    if 'confirm-comment-button' in changed_id: 
+        col_indx = partner_match_count[partner_match_count['Partners'] == partner_name].index.values[0]
+        partner_match_count.at[col_indx, "Comments"] = comments        
+        partner_match_count.to_excel(config['partner_match'], sheet_name="Partner Match", index=False)
+        children = "Added comment"
+        return children
+    else: 
+        children = " "
+        return children
+
+
+@app.callback(Output('comment-box','value' ),
+              [Input('output_bargraph', 'clickData'), 
+              Input('solver-dropdown', 'value')])
+def popluate_comment_box(partner_state, solver): 
+    partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    partner_name = partner_state['points'][0]['y']
+    
+    if "output_bargraph" in changed_id: 
+        col_indx = partner_match_count[partner_match_count['Partners'] == partner_name].index.values[0]
+        comments = partner_match_count.at[col_indx, "Comments"] 
+        return comments
+    
+
+
+
 # @app.callback(dash.dependencies.Output('confirm-yes-button', 'style'), 
 #             [dash.dependencies.Input('solver-dropdown', 'value'), 
 #              dash.dependencies.Input('output_bargraph', 'clickData')])

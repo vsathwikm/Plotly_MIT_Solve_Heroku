@@ -275,8 +275,10 @@ layout1 = html.Div(children=[
 
     # Comment box
     dcc.Textarea(
-        id='textarea-for-comments',
+        id='comment-box',
         value='Text area for comments', # initial value
         style={'width': '50%', 'height': 200, 'Align-items': 'center'},
     ),
+    html.Div([html.Button("Add Comment", id="confirm-comment-button")]),
+    html.Div(id='comment-status')
 ])
