@@ -516,7 +516,7 @@ def partner_select(n_clicks, partner_state,  solver, delete_button):
 @app.callback(Output('confirm-msg', 'children'), 
             [Input('confirm-delete-button', 'n_clicks'),
               Input('output_bargraph', 'clickData'), 
-              State('solver-dropdown', 'value')])
+              Input('solver-dropdown', 'value')])
 def partner_delete(n_clicks, partner_state, solver  ): 
     if n_clicks is None: 
         raise PreventUpdate
@@ -543,7 +543,7 @@ def partner_delete(n_clicks, partner_state, solver  ):
             [Input('confirm-yes-button', 'n_clicks'),
              Input('confirm-delete-button', 'n_clicks'),
              Input('output_bargraph', 'clickData'), 
-             State('solver-dropdown', 'value')])
+             Input('solver-dropdown', 'value')])
 def style_partner_table(yes_button, delete_button, partner_click, solver): 
     partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
     style_cell={
