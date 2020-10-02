@@ -252,9 +252,10 @@ def update_graph_from_solver_dropdown(value, n_clicks):
     total_fig = px.bar(uploaded_df_total_score.sort_values(value, ascending=False)[:5],
                        x=value, 
                        y="Org_y",
+                       title = "Output graph for {}".format(value),
                        labels = {'Org_y':'PARTNER',
                                   value:'Total Score'})
-
+                        
     total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
     return total_fig
 
