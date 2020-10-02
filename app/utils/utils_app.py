@@ -45,11 +45,18 @@ def parse_contents(contents, filename, date):
             number_sheets = len(pd.ExcelFile(decoded_data).sheet_names)            
             solver_data = pd.read_excel(decoded_data, sheet_name="Solver Team Data")
             partner_data = pd.read_excel(decoded_data, sheet_name="Partner Data")
+            
             try:
                 weights = pd.read_excel(decoded_data, sheet_name="Partner Solver Weights")
                 weights.to_excel(config['outputs'] + config['partner-solver-inital-weights'], sheet_name='Partner Solver Weights', index=False)
+
+                partner_match = pd.read_excel(decoded_data, sheet_name="Partner Match")
+                partner_match.to_excel(config['partner_match'], sheet_name= 'Partner Match', index=False)
+
             except: 
+                print("Error in seperating Weights or Partner Match sheets")
                 pass
+
             solver_data.to_csv(config['solver_location'], index=False)
             partner_data.to_csv(config['partner_location'], index=False)
            

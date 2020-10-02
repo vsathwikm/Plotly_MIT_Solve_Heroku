@@ -15,6 +15,7 @@ initial_weights: 'inital_weights.xlsx'
 current_weights: 'solver_partner_weights.csv'
 partner-solver-inital-weights: 'partner-solver-init-weights.xlsx'
 output_weights: 'outputs/partner-solver-weights.xlsx'
+partner_match: "outputs/partner_match.xlsx"
 max_matches: 5
 partner_thres: 0
 partner_inter: 2 

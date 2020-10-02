@@ -34,6 +34,8 @@ import pandas as pd
 import dash
 import plotly.graph_objects as go
 from dash.dependencies import Output, Input, State
+import dash_bootstrap_components as dbc
+
 # writing to excel files
 import openpyxl
 import yaml 
@@ -125,11 +127,17 @@ def update_output2(list_of_contents, list_of_names, list_of_dates):
         partners_df = pd.read_csv(config['partner_location'])
         if number_sheets <= 2: 
             partner_solver_weights = zebra.inital_partner_solver_weights(solver_df, partners_df)
+            num_partners = len(partners_df['Org'])
+            partner_names = partners_df['Org'].values
+            none_list = ['None' for x in range(0,num_partners)]
+            count_list = [0 for x in range(0, num_partners)]
+            partners_match_count = pd.DataFrame(data=[partner_names, none_list, count_list], index=['Partners', 'Solvers', 'Count']).T
             with pd.ExcelWriter(config['output_weights'], mode='w') as writer: 
                 solver_df.to_excel(writer, sheet_name='Solver Team Data', index=False)
                 partners_df.to_excel(writer, sheet_name='Partner Data', index=False)
                 partner_solver_weights.to_excel(writer, sheet_name='Partner Solver Weights', index=False)
-
+                partners_match_count.to_excel(writer, sheet_name='Partner Match', index=False)
+                
             children = list_of_names
             return children 
         else: 
@@ -147,7 +155,7 @@ def download_weights():
     """
 
     
-    return send_file(config['outputs'] + config['partner-solver-inital-weights'],
+    return send_file(config['output_weights'],
             mimetype = 'xlsx',
             attachment_filename= config['partner-solver-inital-weights'],
             as_attachment = True)
@@ -351,84 +359,7 @@ def update_partner_table(clickData):
         ]
     data = selected_partner_row_info.to_dict('records')
     return [columns, data]
-   
-# Click on the partner button to generate partners list and save the match in the document
-@app.callback(dash.dependencies.Output('clicked_on_partner_table', 'style_cell'), 
-            [dash.dependencies.Input('confirm-yes-button', 'n_clicks'),
-            dash.dependencies.Input('solver-dropdown', 'value'), 
-             dash.dependencies.Input('output_bargraph', 'clickData')])
-def partner_select(n_clicks, solver,  table_partner): 
-    if n_clicks is None: 
-        raise PreventUpdate
-    else: 
 
-        style_cell={
-                'whiteSpace': 'normal',
-                'height': 'auto',
-                'textAlign': 'center',
-                'font_family': 'helvetica',
-                'font_size': '20px',
-            }    
-        partner_name =  table_partner['points'][0]['y']
-
-        # Make partners list if it does not exist 
-        if not os.path.exists(config['track_partners']): 
-            partners_list = pd.read_excel(config['total_score_location'])['Org_y'].values.tolist()
-        
-            solvers =[ '' for x in range(0,len(partners_list))]
-            count = [0 for x in range(0,len(partners_list))]
-            partners_trackers = pd.DataFrame(data=[partners_list, solvers, count],
-                                            index=['partners','solvers', 'counter']).T
-            partners_trackers.to_csv(config['track_partners'], index=False)
-        else: 
-            partners_trackers = pd.read_csv(config['track_partners'])
-            
-        # check if confirmed matches file exists, if not then create it
-        # while creating, label partner-solver matches
-        # also make additions to the partners list
-        if not os.path.exists(config['confirmed_matches']): 
-            total_score = pd.read_excel(config['total_score_location'])
-            for col in total_score:
-                if not col == 'Org_y':
-                    total_score[col].values[:] = 0 
-
-            total_score[solver][total_score['Org_y'] == partner_name] = 1
-            partners_trackers['counter'][partners_trackers['partners'] == partner_name] += 1
-            partners_trackers['solvers'][partners_trackers['partners']==partner_name] += ', '+solver  
-        
-            total_score.to_csv(config['confirmed_matches'], index=False)
-            partners_trackers.to_csv(config['track_partners'], index=False)
-            
-            solvers_for_partner = int(total_score.loc[total_score['Org_y']==partner_name].sum(axis=1).values) 
-            if solvers_for_partner <= config['partner_inter'] : 
-                style_cell['color'] = 'green'
-            elif solvers_for_partner > config['partner_inter']  and solvers_for_partner <= config['max_matches']: 
-                style_cell['color'] = 'blue'
-            else: 
-                style_cell['color'] = 'red'
-
-            return style_cell
-
-        else: 
-            total_score = pd.read_csv(config['confirmed_matches'])
-            
-        
-            total_score[solver][total_score['Org_y']== partner_name] = 1
-            partners_trackers['counter'][partners_trackers['partners'] == partner_name] += 1
-            partners_trackers['solvers'][partners_trackers['partners']==partner_name] += ', '+solver  
-
-            solvers_for_partner = int(total_score.loc[total_score['Org_y']==partner_name].sum(axis=1).values) 
-            partners_trackers.to_csv(config['track_partners'], index=False)
-            total_score.to_csv(config['confirmed_matches'], index=False)
-            
-            if solvers_for_partner <= config['partner_inter'] : 
-                style_cell['color'] = 'green'
-            elif solvers_for_partner > config['partner_inter']  and solvers_for_partner <= config['max_matches']: 
-                style_cell['color'] = 'blue'
-            else: 
-                style_cell['color'] = 'red'
-
-            return style_cell    
 
 
 
@@ -518,3 +449,206 @@ def update_total_score(clicks, gw, sw, cw, nw, clickData, solver_name):
         total_score_df.to_excel(config['total_score_location'], index=False)
 
         return None
+
+
+
+
+# Click on the partner button to generate partners list and save the match in the document
+@app.callback(dash.dependencies.Output('confirm-yes-button', 'style'),
+            [dash.dependencies.Input('confirm-yes-button', 'n_clicks'),
+             dash.dependencies.Input('output_bargraph', 'clickData'),
+            dash.dependencies.Input('solver-dropdown', 'value')])
+def partner_select(n_clicks, partner_state,  solver): 
+    if n_clicks is None: 
+        raise PreventUpdate
+    else:   
+        style={
+                    'height': '60px',
+                    'textAlign': 'center',
+                    'background-color': 'white'
+            }
+        
+        partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match") 
+        changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+        if "output_bargraph" in changed_id: 
+            partner_name =  partner_state['points'][0]['y']       
+            # Check partner is already partnered with solver 
+            check_solver = zebra.check_solver(partner_match_count, partner_name, solver)
+            if check_solver == 1: 
+                style={
+                        'height': '60px',
+                        'textAlign': 'center',
+                        'background-color':'green'
+                    }
+            
+            else: 
+                style={
+                        'height': '60px',
+                        'textAlign': 'center',
+                        'background-color':'white'
+                    }
+                
+        elif "confirm-yes-button" in changed_id:        
+            partner_name =  partner_state['points'][0]['y']       
+            outputs = zebra.update_colval(partner_match_count, solver, partner_name, "Partners", "Solvers")
+            if outputs != 1: 
+                partner_match_output = outputs[0]
+                partner_match_output.to_excel(config['partner_match'], sheet_name="Partner Match", index=False)
+                style={
+                        'height': '60px',
+                        'textAlign': 'center',
+                        'background-color': 'green'
+                }
+          
+    return style
+
+
+
+@app.callback(dash.dependencies.Output('confirm-msg', 'children'), 
+            [dash.dependencies.Input('confirm-delete-button', 'n_clicks'),
+              dash.dependencies.Input('output_bargraph', 'clickData'), 
+              dash.dependencies.State('solver-dropdown', 'value'),])
+def partner_delete(n_clicks, partner_state, solver  ): 
+    if n_clicks is None: 
+        raise PreventUpdate
+    else:    
+        changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+        
+        msg = " "        
+        if "confirm-delete-button" in changed_id: 
+            partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
+            partner_name =  partner_state['points'][0]['y']       
+            outputs = zebra.delete_colval(partner_match_count, solver, partner_name, "Partners", "Solvers")
+            if outputs != 0: 
+                partner_match_output = outputs[0]
+                partner_match_output.to_excel(config['partner_match'], sheet_name="Partner Match", index=False)
+                msg = "Deleted value"
+            else: 
+                msg = "Nothing to delete"
+    return msg
+
+
+# @app.callback(dash.dependencies.Output('confirm-yes-button', 'style'), 
+#             [dash.dependencies.Input('solver-dropdown', 'value'), 
+#              dash.dependencies.Input('output_bargraph', 'clickData')])
+# def check_partner(solver, table_partner):
+
+#     partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
+#     if table_partner:     
+#         partner_name =  table_partner['points'][0]['y']
+
+#  # Check partner is already partnered with solver 
+#     check_solver = zebra.check_solver(partner_match_count, partner_name, solver)
+#     if check_solver == 1: 
+#         style={
+#                 'height': '60px',
+#                 'textAlign': 'center',
+#                 'color':'green'
+#             }
+#     else:
+#         style={
+#                 'height': '60px',
+#                 'textAlign': 'center',
+#                 'color':'black'
+#             }
+
+#     return style
+
+# # Click on the partner button to generate partners list and save the match in the document
+# @app.callback(dash.dependencies.Output('clicked_on_partner_table', 'style_cell'), 
+#             [dash.dependencies.Input('confirm-yes-button', 'n_clicks'),
+#             dash.dependencies.Input('solver-dropdown', 'value'), 
+#              dash.dependencies.Input('output_bargraph', 'clickData')])
+# def partner_select(n_clicks, solver,  table_partner): 
+#     if n_clicks is None: 
+#         raise PreventUpdate
+#     else: 
+
+#         style_cell={
+#                 'whiteSpace': 'normal',
+#                 'height': 'auto',
+#                 'textAlign': 'center',
+#                 'font_family': 'helvetica',
+#                 'font_size': '20px',
+#             }    
+#         partner_name =  table_partner['points'][0]['y']
+#         # Make partners list if it does not exist 
+#         if not os.path.exists(config['track_partners']): 
+#             partners_list = pd.read_excel(config['total_score_location'])['Org_y'].values.tolist()
+        
+#             solvers =[ '' for x in range(0,len(partners_list))]
+#             count = [0 for x in range(0,len(partners_list))]
+#             partners_trackers = pd.DataFrame(data=[partners_list, solvers, count],
+#                                             index=['partners','solvers', 'counter']).T
+#             partners_trackers.to_csv(config['track_partners'], index=False)
+#         else: 
+#             partners_trackers = pd.read_csv(config['track_partners'])
+            
+#         # check if confirmed matches file exists, if not then create it
+#         # while creating, label partner-solver matches
+#         # also make additions to the partners list
+#         if not os.path.exists(config['confirmed_matches']): 
+#             total_score = pd.read_excel(config['total_score_location'])
+#             for col in total_score:
+#                 if not col == 'Org_y':
+#                     total_score[col].values[:] = 0 
+
+#             total_score[solver][total_score['Org_y'] == partner_name] = 1
+#             partners_trackers['counter'][partners_trackers['partners'] == partner_name] += 1
+#             partners_trackers['solvers'][partners_trackers['partners']==partner_name] += ', '+solver  
+        
+#             total_score.to_csv(config['confirmed_matches'], index=False)
+#             partners_trackers.to_csv(config['track_partners'], index=False)
+            
+#             solvers_for_partner = int(total_score.loc[total_score['Org_y']==partner_name].sum(axis=1).values) 
+#             if solvers_for_partner <= config['partner_inter'] : 
+#                 style_cell['color'] = 'green'
+#             elif solvers_for_partner > config['partner_inter']  and solvers_for_partner <= config['max_matches']: 
+#                 style_cell['color'] = 'blue'
+#             else: 
+#                 style_cell['color'] = 'red'
+
+#             return style_cell
+
+#         else: 
+#             total_score = pd.read_csv(config['confirmed_matches'])
+            
+        
+#             total_score[solver][total_score['Org_y']== partner_name] = 1
+#             partners_trackers['counter'][partners_trackers['partners'] == partner_name] += 1
+#             partners_trackers['solvers'][partners_trackers['partners']==partner_name] += ', '+solver  
+
+#             solvers_for_partner = int(total_score.loc[total_score['Org_y']==partner_name].sum(axis=1).values) 
+#             partners_trackers.to_csv(config['track_partners'], index=False)
+#             total_score.to_csv(config['confirmed_matches'], index=False)
+            
+#             if solvers_for_partner <= config['partner_inter'] : 
+#                 style_cell['color'] = 'green'
+#             elif solvers_for_partner > config['partner_inter']  and solvers_for_partner <= config['max_matches']: 
+#                 style_cell['color'] = 'blue'
+#             else: 
+#                 style_cell['color'] = 'red'
+
+#             return style_cell    
+
+    
+    # # if table_partner:     
+        
+    # # # Check partner is already partnered with solver 
+    #     check_solver = zebra.check_solver(partner_match_count, partner_name, solver)
+    #     print(check_solver, "solver vlaue")
+    #     if check_solver == 1: 
+    #         style={
+    #                 'height': '60px',
+    #                 'textAlign': 'center',
+    #                 'color':'green'
+    #             }
+    #     else: 
+    #         style={
+    #                 'height': '60px',
+    #                 'textAlign': 'center',
+    #                 'color':'black'
+    #             }
+
+    #     print(table_partner)   
+    #     if not table_partner:     

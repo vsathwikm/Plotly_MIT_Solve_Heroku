@@ -4,6 +4,7 @@ import dash_auth
 
 
 
+
 # for adding basic Auth 
 VALID_USERNAME_PASSWORD_PAIRS = {
     'mit': 'solve2020'

@@ -8,6 +8,7 @@ import dash
 import plotly.graph_objects as go
 from dash.dependencies import Output, Input
 
+
 # APP LAYOUT
 layout1 = html.Div(children=[
 
@@ -233,14 +234,18 @@ layout1 = html.Div(children=[
     
 
     html.Div([ 
-            html.Div([html.Button("Yes", id="confirm-yes-button")])
+            html.Div([html.Button("Yes", id="confirm-yes-button")]), 
+            html.Div([html.Button("Delete", id="confirm-delete-button")]), 
+            html.Div(id="confirm-msg")
     ],
         className="row",
         style={
         'height': '60px',
         'textAlign': 'center',
-    }),
+        }, 
+    ),
 
+    html.Br(), 
 
     # A line break to make dashboard less crowded
     html.P(children=html.Br(), style={'textAlign': 'center'}),
