@@ -472,9 +472,9 @@ def partner_select(n_clicks, partner_state,  solver, delete_button):
         raise PreventUpdate
     else:   
         style={
-                    'height': '60px',
+                    # 'height': '60px',
                     'textAlign': 'center',
-                    'background-color': 'white'
+                    'background-color': ' #1a1c23'
             }
         
         partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match") 
@@ -486,16 +486,16 @@ def partner_select(n_clicks, partner_state,  solver, delete_button):
             check_solver = zebra.check_solver(partner_match_count, partner_name, solver)
             if check_solver == 1: 
                 style={
-                        'height': '60px',
+                        # 'height': '60px',
                         'textAlign': 'center',
                         'background-color':'green'
                     }
             
             else: 
                 style={
-                        'height': '60px',
+                        # 'height': '60px',
                         'textAlign': 'center',
-                        'background-color':'white'
+                        'background-color':' #1a1c23'
                     }
                 
         elif "confirm-yes-button" in changed_id:        
@@ -505,21 +505,21 @@ def partner_select(n_clicks, partner_state,  solver, delete_button):
                 partner_match_output = outputs[0]
                 partner_match_output.to_excel(config['partner_match'], sheet_name="Partner Match", index=False)
             style={
-                        'height': '60px',
+                        # 'height': '60px',
                         'textAlign': 'center',
                         'background-color': 'green'
                 }        
         elif "confirm-delete-button" in changed_id: 
             style={
-                        'height': '60px',
+                        # 'height': '60px',
                         'textAlign': 'center',
-                        'background-color': 'white'
+                        'background-color': ' #1a1c23'
                 }
               
     return style
 
 
-
+## DELETE BUTTON
 @app.callback(Output('confirm-msg', 'children'), 
             [Input('confirm-delete-button', 'n_clicks'),
               Input('output_bargraph', 'clickData'), 

@@ -104,6 +104,11 @@ layout1 = html.Div(children=[
                         children = [dcc.Dropdown(
                                                 id='solver-dropdown',
                                                 value = '',  
+                                                style=
+                                    { 'width': '400px',
+                                      'color': '#212121',
+                                      'background-color': '#212121',
+                                    } 
                                 )
                                 
                         ]
