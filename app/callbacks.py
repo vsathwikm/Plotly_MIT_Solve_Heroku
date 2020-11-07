@@ -70,16 +70,17 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
     '''
     if not os.path.exists(config['outputs']): 
         os.makedirs(config['outputs'])
-
+    print("test 1")
     if list_of_contents is not None:
         number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
-        if number_sheets == 3: 
+        print(number_sheets)
+        if number_sheets == 4: 
             partner_solver_weights = pd.read_excel(config['outputs'] + config['partner-solver-inital-weights'], sheet_name= 'Partner Solver Weights')
             geo_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'geo_weights']], columns='Org_x', index='Org_y' )
             needs_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'needs_weights']], columns='Org_x', index='Org_y' )
             challenge_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'challenge_weights']], columns='Org_x', index='Org_y' )
             stage_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'stage_weights']], columns='Org_x', index='Org_y' )
-        
+           
             # List_of_uploaded_files is fully available here
             new_total_score = create_total_score_excel(config['outputs'],
                                                         geo_weights_pivot,
@@ -91,6 +92,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             children = "Generated outputs"
             solver_df =  pd.read_csv(config['solver_location'])
             partners_df = pd.read_csv(config['partner_location'])
+            print(new_total_score.head())
             with pd.ExcelWriter(config['output_weights'], mode='w') as writer: 
                 solver_df.to_excel(writer, sheet_name='Solver Team Data', index=False)
                 partners_df.to_excel(writer, sheet_name='Partner Data', index=False)
@@ -124,7 +126,9 @@ def update_output2(list_of_contents, list_of_names, list_of_dates):
         number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
         solver_df =  pd.read_csv(config['solver_location'])
         partners_df = pd.read_csv(config['partner_location'])
-        if number_sheets <= 2: 
+        print(number_sheets)
+        if number_sheets < 3: 
+            
             partner_solver_weights = zebra.inital_partner_solver_weights(solver_df, partners_df)
             num_partners = len(partners_df['Org'])
             partner_names = partners_df['Org'].values
@@ -132,6 +136,8 @@ def update_output2(list_of_contents, list_of_names, list_of_dates):
             count_list = [0 for x in range(0, num_partners)]
             comments_list = ['None' for x in range(0, num_partners)]
             partners_match_count = pd.DataFrame(data=[partner_names, none_list, count_list, comments_list], index=['Partners', 'Solvers', 'Count', 'Comments']).T
+            # partners_match_count.to_excel("partners_match_intermediate.xlsx")
+           
             with pd.ExcelWriter(config['output_weights'], mode='w') as writer: 
                 solver_df.to_excel(writer, sheet_name='Solver Team Data', index=False)
                 partners_df.to_excel(writer, sheet_name='Partner Data', index=False)
