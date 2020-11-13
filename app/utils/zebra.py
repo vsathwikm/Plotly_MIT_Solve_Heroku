@@ -252,16 +252,16 @@ def get_ch_partners(partners_df):
     :return: An unpivoted list of partner preferences
     :rtype: pandas.core.frame.DataFrame
     """
-    ch_partners = partners_df[["Org","Challenge Preference"]]
-    ch_partners["Challenge Preference"] =  ch_partners["Challenge Preference"].str.split(",")
-    ch_partners_explode = ch_partners.explode("Challenge Preference")
-    ch_partners_explode = ch_partners_explode.rename(columns={"Challenge Preference": "Challenge"})
-    ch_partners_explode = ch_partners_explode.apply(lambda x: x.str.strip())
-    ch_partners_explode.Challenge.astype(str)
-    ch_partners_reset = ch_partners_explode.reset_index().drop('index', axis=1)
-    ch_partners_reset["Org"] = ch_partners_reset["Org"].astype(str)
+    ch_partners = partners_df[["Org", 'Challenge_1']]
+    # ch_partners["Challenge Preference"] =  ch_partners["Challenge Preference"].str.split(",")
+    # ch_partners_explode = ch_partners.explode("Challenge Preference")
+    # ch_partners_explode = ch_partners_explode.rename(columns={"Challenge Preference": "Challenge"})
+    # ch_partners_explode = ch_partners_explode.apply(lambda x: x.str.strip())
+    # ch_partners_explode.Challenge.astype(str)
+    # ch_partners_reset = ch_partners_explode.reset_index().drop('index', axis=1)
+    # ch_partners["Org"] = ch_partners["Org"].astype(str)
     
-    return ch_partners_reset 
+    return ch_partners
 
 def get_ch_solvers(solver_df):
     """ Get DataFrame of solver preferences 
@@ -271,10 +271,9 @@ def get_ch_solvers(solver_df):
     :return: An unpivoted list of solver preferences
     :rtype: pandas.core.frame.DataFrame
     """
-    ch_solver = solver_df[["Org", "Challenge"]]
-    ch_solver = ch_solver.apply(lambda x: x.str.strip() )
-    ch_solver["Org"] = ch_solver["Org"].astype(str)
-    
+    ch_solver = solver_df[["Org","Challenge"]]
+    ch_solver['Challange'] = ch_solver['Challenge'].apply(lambda x: x.strip() )
+   
     return ch_solver
 
 
@@ -295,15 +294,14 @@ def pivot_table_challenges(ch_solver, ch_partners_reset, export_path, export=Fal
     merged_df = pd.merge(ch_solver,
                          ch_partners_reset,
                          left_on="Challenge",
-                         right_on='Challenge',
+                         right_on='Challenge_1',
                          how='outer')
     merged_pivot_table = pd.pivot_table(merged_df,
                                         values="Challenge",
                                         index=["Org_y"],
                                         columns=["Org_x"],
                                         aggfunc=np.sum)
-    
-    
+  
     challenges_pivot = merged_pivot_table.copy()
     challenges_pivot = challenges_pivot[challenges_pivot != 0] 
     challenges_pivot_nulled = challenges_pivot.isnull()
@@ -409,15 +407,21 @@ def inital_partner_solver_weights(solver_df, partners_df):
     merged_df = pd.merge(ch_solver,
                              ch_partners_challenges,
                              left_on="Challenge",
-                             right_on='Challenge',
+                             right_on='Challenge_1',
                              how='outer')
+    merged_df = merged_df.replace(np.nan, 'Noval')
+
     # Generate a pivot table on partners and solvers using the merged dataset                          
     merged_pivot_table = pd.pivot_table(merged_df,
                                             values="Challenge",
                                             index=["Org_y"],
                                             columns=["Org_x"],
                                             aggfunc=np.sum)
-
+    if 'Noval' in merged_pivot_table.columns:
+        merged_pivot_table = merged_pivot_table.drop(columns=['Noval'])
+    if 'Noval' in merged_pivot_table.index:
+        merged_pivot_table = merged_pivot_table.drop(index='Noval', axis=0) 
+    
 
     # Set all the values on the pivot table to 1 and reset index  
     challenges_pivot = merged_pivot_table.copy()
@@ -432,7 +436,8 @@ def inital_partner_solver_weights(solver_df, partners_df):
     unpivoted_inital_table = unpivoted_inital_table.assign(geo_weights=zero_column, 
                             challenge_weights=zero_column,
                             needs_weights=zero_column, 
-                            stage_weights=zero_column)
+                            stage_weights=zero_column, 
+                            tech_weights=zero_column)
 
     # Drop the value column since it we only care about the 4 needs created above                        
     partners_solvers_weights =  unpivoted_inital_table.drop(columns='value')
@@ -527,6 +532,7 @@ def match_multi(df1, df2):
     melted_df1 = melted_df1.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
     melted_df2 = melted_df2.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
     matched_df = pd.merge(melted_df1, melted_df2, how='outer', left_on='value', right_on='value')
+    matched_df = matched_df.replace(np.nan, 'Noval')
     matched_df['value'] = matched_df['value'].apply(lambda x : 0 if  x == 'Noval' else 1)
     pivot_table = pd.pivot_table(matched_df, index='Org_x', columns=['Org_y'], values='value',aggfunc=np.sum)
     return pivot_table
@@ -542,97 +548,99 @@ def match_single_to_multi(single_df, multi_df, single_match_on='None'):
     melted_df = melted_df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
     single_df = single_df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
     matched_df = pd.merge(melted_df, single_df, how='outer', left_on='value', right_on=single_match_on)
+    matched_df = matched_df.replace(np.nan, 'Noval')
     matched_df['value'] = matched_df['value'].apply(lambda x : 0 if x == None else 1)
     pivot_table = pd.pivot_table(matched_df, index='Org_x', columns=['Org_y'], values='value', dropna=False,  aggfunc=np.sum)
 
     return pivot_table
 
 
-
 ############### V2 functions #########################
 def challenge_match_v2(solvers_df, partners_df, export_path, export=True):
+    chname = 'Challenge'
+    challenge_cols = [x for x in partners_df.columns if chname in x ]
+    partner_challenge_cols = partners_df[challenge_cols]
+    
+    solver_challenge_cols = solvers_df[['Org', 'Challenge']]
+    partner_challenge_cols['Org'] = partners_df['Org']
+    challenge_match = match_single_to_multi(solver_challenge_cols, partner_challenge_cols, single_match_on='Challenge')
 
-    # Get partner challenge column 
-    challenge_col = partners_df['Challenge Preference']
-    partner_challenge_df  = expand_col(challenge_col, col_name='Challenge')
-    partner_challenge_df['Org'] = partners_df['Org']
-
-    # Get solver challenge column 
-    solver_challenge_df = solvers_df[['Org','Challenge']]
-
-    # Get Match between solver challenge and partner challenge
-    challenge_matched = match_single_to_multi(solver_challenge_df, partner_challenge_df, 'Challenge')
-    challenge_matched = challenge_matched.fillna(0)
+    if 'Noval' in challenge_match.columns: 
+        challenge_match = challenge_match.drop(columns=['Noval'])
+    
+    challenge_match = challenge_match.fillna(0)
     if export==True: 
-        challenge_matched.to_excel("".join([export_path, "challenge_match.xlsx"]))
-    return challenge_matched
+        challenge_match.to_excel("".join([export_path, "challenge_match.xlsx"]))
+    return challenge_match
 
 
 def stage_matched_v2(solvers_df, partners_df, export_path, export=True):
-    partner_stage_cols = partners_df['Solution Preference: Organization Stage']
-    partner_stage_df = expand_col(partner_stage_cols, col_name='stage')
+    stage_name = 'Stage'
+    stage_columns = [x  for x in partners_df.columns if stage_name in x]
+    stage_columns.append('Org')
+    partner_stage_cols = partners_df[stage_columns]
+    solver_stage_cols = solvers_df[['Stage', 'Org']]
+    stage_match = match_single_to_multi(solver_stage_cols, partner_stage_cols, single_match_on='Stage')
 
-    # Add org column 
-    partner_stage_df['Org'] = partners_df['Org']
-
-    # Make solver stage df 
-    solver_stage_df = solvers_df[['Org','Stage']]
-
-    # Get Match between solver challenge and partner challenge
-    stage_matched = match_single_to_multi(solver_stage_df, partner_stage_df, 'Stage')
-    
-    # Append extra row to stage_matched. A row missing since a partner does not match 
-    # with any other solve. Look at missing partner variable
-    partner_stage_set = set(stage_matched.index.to_list())
-    partner_set = set(partners_df['Org'].to_list())
-    missing_partner = list(partner_set.difference(partner_stage_set))
-    missing_partner_row = [0 for x in range(0, stage_matched.shape[1])]
-    stage_matched.loc[missing_partner[0]] = missing_partner_row
-    stage_matched= stage_matched.fillna(0)
-    if export == True:
-        stage_matched.to_excel("".join([export_path, "stage_match.xlsx"]))
-    return stage_matched
+    if 'Noval' in stage_match.columns: 
+        stage_match = stage_match.drop(columns=['Noval'])
+        stage_match = stage_match.fillna(0)
+        if export == True:
+            stage_match.to_excel("".join([export_path, "stage_match.xlsx"]))
+        return stage_match
 
 def geo_matched_v2(solvers_df, partners_df, export_path, export=True): 
     # geo column in partner data
-    partner_geo_col = partners_df['Geo Interests']
-    partner_geo_df = expand_col(partner_geo_col, col_name='Geo')
-    partner_geo_df['Org'] = partners_df['Org']
+    geo_cols = [x for x in partners_df.columns if 'geo' in x]
+    geo_cols.append('Org')
+    partner_geo_cols = partners_df[geo_cols]
 
-    # geo column for solvers
-    solver_geo_df = solvers_df[['Org', 'Geo 1','Geo 2', 'Geo 3']]
-    geo_matched = match_multi(partner_geo_df, solver_geo_df)
-    geo_matched = geo_matched.fillna(0)
+    solver_geo_cols = solvers_df[['Org', 'Geo 1', 'Geo 2', 'Geo 3']]
+    geo_match = match_multi(partner_geo_cols,solver_geo_cols)
+    if 'Noval' in geo_match.columns: 
+        geo_match = geo_match.drop(columns=['Noval'])
+    geo_match = geo_match.fillna(0)
     if export == True:
-        geo_matched.to_excel("".join([export_path, "geo_match.xlsx"]))
-    return geo_matched
+        geo_match.to_excel("".join([export_path, "geo_match.xlsx"]))
+    return geo_match
 
 def needs_matched_v2(solvers_df, partners_df, export_path, export=True): 
-    
-    # Get partners needs 
-    partner_needs_col = partners_df['Partnership Preference: Non-Financial']
-    partner_needs_df = expand_col(partner_needs_col, delimiter=r',\s*(?![^()]*\))', col_name='needs')
-    partner_needs_df['Org'] = partners_df['Org']
-
-    # Get solver needs
-    solver_needs_df = solvers_df[['Org', 'Key Need 1', 'Key Need 2', 'Key Need 3', 'Key Need 4', 'Key Need 5', 'Key Need 6', 'Key Need 7', 'Key Need 8'] ]
-
-    # Do multi match
-    needs_matched = match_multi(partner_needs_df, solver_needs_df)
-    needs_matched = needs_matched.fillna(0)
+    needs_name ='Key Need'
+    pref_name = 'Partnership Preference'
+    prefs_columns = [x  for x in partners_df.columns if pref_name in x]
+    needs_columns = [x  for x in solvers_df.columns if needs_name in x]
+    prefs_columns.append('Org')
+    needs_columns.append('Org')
+    partner_prefs_cols = partners_df[prefs_columns]
+    solver_needs_cols = solvers_df[needs_columns]
+    needs_match = match_multi(partner_prefs_cols, solver_needs_cols)
+    needs_match = needs_match.fillna(0)
     if export == True:
-        needs_matched.to_excel("".join([export_path, "needs_match.xlsx"]))    
-    return needs_matched
+            needs_match.to_excel("".join([export_path, "needs_match.xlsx"]))    
+    return needs_match
 
 
 def tech_matched_v2(solvers_df, partners_df, export_path, export=True): 
-    solver_tech_cols = [ 'Org', 'Tech 1', 'Tech 2', 'Tech 3', 'Tech 4', 'Tech 5', 'Tech 6', 'Tech 7']
-    solver_tech_df = solvers_df[solver_tech_cols]
+
+    tech_name = 'Tech'
+    tech_cols = [x for x in solvers_df.columns if  tech_name in x]
+    tech_cols.append('Org')
+    solver_tech_cols = solvers_df[tech_cols]
     
-    partner_tech_df = expand_col(partners_df['Technology Expertise'], col_name='Tech')
-    partner_tech_df['Org'] = partners_df['Org']
-    tech_matched = match_multi(partner_tech_df, solver_tech_df)
-    tech_matched = tech_matched.fillna(0)
+    exp_name = 'tech'
+    exp_cols = [x for x in partners_df.columns if  exp_name in x]
+    exp_cols.append('Org')
+
+    partner_tech_cols = partners_df[exp_cols]
+    partner_tech_cols['Org'] = partners_df['Org']
+    tech_match = match_multi(partner_tech_cols, solver_tech_cols)
+
+    if 'Noval' in tech_match.columns:
+        tech_match = tech_match.drop(columns=['Noval'])
+    if 'Noval' in tech_match.index:
+        tech_match = tech_match.drop(index='Noval', axis=0) 
+
+    tech_match = tech_match.fillna(0)
     if export == True:
         tech_matched.to_excel("".join([export_path, "tech_match.xlsx"]))  
     return tech_matched

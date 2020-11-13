@@ -37,15 +37,18 @@ def create_total_score_excel(export_path, geo_weights_pivot, needs_weights_pivot
      # NEEDS MATCH
      needs_matched = zebra.needs_matched_v2(solvers_df, partners_df, export_path)
 
+     # TECH MATCH 
+     tech_matched  = zebra.tech_matched_v2(solvers_df, partners_df, export_path)
 
      challenge_term = 10*pd.DataFrame(challenge_weights_pivot.values*challenge_matched.astype(float).values, columns=challenge_weights_pivot.columns, index=challenge_weights_pivot.index)['challenge_weights']
      stage_term = pd.DataFrame(stage_weights_pivot.values*stage_matched.astype(float).values, columns=stage_weights_pivot.columns, index=stage_weights_pivot.index)
      geo_term = pd.DataFrame(geo_weights_pivot.values*geo_matched.astype(float).values, columns=geo_weights_pivot.columns, index=geo_weights_pivot.index)['geo_weights']
      geo_stage_term = 100*pd.DataFrame(geo_term.values*stage_term.values, columns=stage_term.columns, index=stage_term.index)['stage_weights']
      needs_term =  pd.DataFrame(needs_weights_pivot.values*needs_matched.astype(float).values, columns=needs_weights_pivot.columns, index=needs_weights_pivot.index)['needs_weights']
+     tech_term =  pd.DataFrame(tech_weights_pivot.values*tech_matched.astype(float).values, columns=tech_weights_pivot.columns, index=tech_weights_pivot.index)['tech_weights']
+     
 
-
-     total_score = challenge_term  + geo_stage_term + needs_term
+     total_score = challenge_term  + geo_stage_term + needs_term + tech_term
      total_score.to_excel(export_path+"/total_score_from_upload.xlsx")
      return total_score
 

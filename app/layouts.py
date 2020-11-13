@@ -83,15 +83,26 @@ layout1 = html.Div(children=[
                 
             
 
+                # html.Div([
+                #         html.A(html.Button('Download Partner-Solver-Weights'), href="/download-weights/",
+                #         ),
+                #         ],
+                #         style={
+                #                     'height': '60px',
+                #                     'textAlign': 'center',
+                #                 }
+                #         ),
                 html.Div([
-                        html.A(html.Button('Download Partner-Solver-Weights'), href="/download-weights/",
-                        ),
-                        ],
-                        style={
-                                    'height': '60px',
-                                    'textAlign': 'center',
-                                }
-                        ),
+                        html.A(
+                            html.Button('Download weights', className='button button-primary'),
+                            id='get-initial-weights',
+                            download='outputs/partner-solver-all-sheets.xlsx',
+                            href="/download-weights/",
+                            target="_blank", 
+                            n_clicks= 0
+            
+                        )
+                ]),
                 html.Br(),
 
                 html.Label('Select a Solver'),
