@@ -115,7 +115,7 @@ body {
   line-height: 1.6;
   font-weight: 400;
   font-family: "Open Sans", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color: rgb(50, 50, 50); }
+  color: rgb(0, 0, 0); }
 
 
 /* Typography
@@ -400,14 +400,14 @@ border: 1px solid #55575D;
 }
 
 .table-news tr:hover{
-background-color: #292B33;
+background-color: #000000;
 cursor: pointer;
 }
 
 .table-orders{
 width: 100%;
 background-color: #22252b;
-color: #686868;
+color: #000000;
 overflow-x: auto;
 }
 

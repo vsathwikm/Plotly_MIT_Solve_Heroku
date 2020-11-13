@@ -621,7 +621,6 @@ def needs_matched_v2(solvers_df, partners_df, export_path, export=True):
 
 
 def tech_matched_v2(solvers_df, partners_df, export_path, export=True): 
-
     tech_name = 'Tech'
     tech_cols = [x for x in solvers_df.columns if  tech_name in x]
     tech_cols.append('Org')
@@ -642,8 +641,8 @@ def tech_matched_v2(solvers_df, partners_df, export_path, export=True):
 
     tech_match = tech_match.fillna(0)
     if export == True:
-        tech_matched.to_excel("".join([export_path, "tech_match.xlsx"]))  
-    return tech_matched
+        tech_match.to_excel("".join([export_path, "tech_match.xlsx"]))  
+    return tech_match
 if __name__ == "__main__":
     print(get_regions_dict())
 

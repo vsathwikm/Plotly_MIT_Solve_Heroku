@@ -189,7 +189,7 @@ layout1 = html.Div(children=[
                         value='1', # initial value
                         style={'display':'inline-block', 'width': '30%', 'height': '10%',},
                     ),
-                ], className="four columns"),
+                ], className="three columns"),
                 html.Div([
                     # Comment box 2
                     html.H5("Needs weight"),
@@ -198,7 +198,7 @@ layout1 = html.Div(children=[
                         value='1', # initial value
                         style={'display':'inline-block', 'width': '30%', 'height': '10%',},
                     ),
-                ], className="four columns")        
+                ], className="three columns")        
             ], className="row"),
 
             # 2 side by side comment boxes for weights
@@ -211,7 +211,7 @@ layout1 = html.Div(children=[
                         value='1', # initial value
                         style={'display':'inline-block', 'width': '30%', 'height': '10%',},
                     ),
-                ], className="four columns"),
+                ], className="three columns"),
                 html.Div([
                     # Comment box 4
                     html.H5("Stage weight"),
@@ -220,8 +220,20 @@ layout1 = html.Div(children=[
                         value='1', # initial value
                         style={'display':'inline-block', 'width': '30%', 'height': '10%',},
                     ),
-                ], className="four columns"),      
+                ], className="three columns"),      
             ], className="row"),
+            html.Div([
+                html.Div([
+                    # Comment box 5
+                    html.H5("Tech weight"),
+                    dcc.Textarea(
+                        id='tech-weight',
+                        value='1', # initial value
+                        style={'display':'inline-block', 'width': '30%', 'height': '10%',},
+                    ),
+                ], className="three columns"),
+            ], className="row"),
+            
             html.Button('Submit Changes to Weights', id='submit-val', n_clicks=0),
             html.P(children=html.Br(), style={'textAlign': 'center'}),
             html.Div(id='confirmation-text',
@@ -244,6 +256,7 @@ layout1 = html.Div(children=[
                     'textAlign': 'center',
                     'font_family': 'helvetica',
                     'font_size': '20px',
+                    'color': 'black'
                 },
                 style_header={
                 'backgroundColor': 'rgb(30, 30, 30)',

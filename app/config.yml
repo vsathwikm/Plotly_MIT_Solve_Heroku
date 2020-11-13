@@ -9,6 +9,7 @@ geo_match: "outputs/geo_match.xlsx"
 needs_match: "outputs/needs_match.xlsx"
 stage_match: "outputs/stage_match.xlsx"
 challenge_match: "outputs/challenge_match.xlsx" 
+tech_match: "outputs/tech_match.xlsx"
 confirmed_matches: 'outputs/confirmed_partner_solver_matches.csv'
 track_partners: 'outputs/partners_list.csv'
 initial_weights: 'inital_weights.xlsx'
@@ -22,3 +23,4 @@ partner_inter: 2
 challenge_weight: 10 
 needs_weight: 1
 geo_stage_weight: 100
+tech_weight: 1

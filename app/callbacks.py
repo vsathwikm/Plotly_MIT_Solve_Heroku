@@ -41,7 +41,7 @@ import yaml
 from dash.exceptions import PreventUpdate
 import time
 import os 
-
+import numpy as np
 
 with open("config.yml") as config_file: 
      config = yaml.load(config_file, Loader=yaml.FullLoader)
@@ -72,15 +72,15 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         os.makedirs(config['outputs'])
     if list_of_contents is not None:
         number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
-        print(number_sheets)
-        if number_sheets == 5: 
+        
+        if number_sheets == 4: 
             partner_solver_weights = pd.read_excel(config['outputs'] + config['partner-solver-inital-weights'], sheet_name= 'Partner Solver Weights')
             geo_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'geo_weights']], columns='Org_x', index='Org_y' )
             needs_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'needs_weights']], columns='Org_x', index='Org_y' )
             challenge_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'challenge_weights']], columns='Org_x', index='Org_y' )
             stage_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'stage_weights']], columns='Org_x', index='Org_y' )
             tech_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'tech_weights']], columns='Org_x', index='Org_y' )
-           
+            
             # List_of_uploaded_files is fully available here
             new_total_score = create_total_score_excel(config['outputs'],
                                                         geo_weights_pivot,
@@ -128,7 +128,7 @@ def update_output2(list_of_contents, list_of_names, list_of_dates):
         partners_df = pd.read_csv(config['partner_location'])
 
         if number_sheets < 3: 
-            print(" this is ", str(number_sheets))
+            
 
             partner_solver_weights = zebra.inital_partner_solver_weights(solver_df, partners_df)
             num_partners = len(partners_df['Org'])
@@ -248,15 +248,15 @@ def update_individual_graph(clickData, n_clicks, solver_name):
         return [figure, '']
 
     # Check to make sure a partnere is selected
-    if clickData != None and "output_bargraph" in changed_id:
+    if clickData != None and ("n_clicks" in changed_id or "output_bargraph" in changed_id):
+        
         # Must get value for partner compared to solver in: geo, needs, stage, challenge
         partner_solver_weights = pd.read_excel(config['outputs'] +config['partner-solver-inital-weights'], sheet_name='Partner Solver Weights')
-
+        
         partner_name = clickData['points'][0]['y']
 
         geo_df = pd.read_excel(config['geo_match'])
         geo_value = float(geo_df[geo_df["Org_x"]==partner_name].iloc[0][solver_name])
-        
         needs_df = pd.read_excel(config['needs_match'])
         needs_value = float(needs_df[needs_df["Org_x"]==partner_name].iloc[0][solver_name])
 
@@ -265,20 +265,26 @@ def update_individual_graph(clickData, n_clicks, solver_name):
 
         challenge_df = pd.read_excel(config['challenge_match'])
         challenge_value = float(challenge_df[challenge_df["Org_x"]==partner_name].iloc[0][solver_name])
+
+        tech_df = pd.read_excel(config['tech_match'])
+        tech_value = float(tech_df[tech_df["Org_x"]==partner_name].iloc[0][solver_name])
+
         cw = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['challenge_weights'].values[0]
         gw = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['geo_weights'].values[0]
         nw = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['needs_weights'].values[0]
         sw = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['stage_weights'].values[0]
+        tw = partner_solver_weights[(partner_solver_weights['Org_x'] == solver_name) & (partner_solver_weights['Org_y'] == partner_name)]['tech_weights'].values[0]
         
         challenge_term = float(cw)*float(config['challenge_weight'])*challenge_value
         needs_term =  float(nw)*float(config['needs_weight'])*needs_value
         geo_stage_term =  float(sw)*float(gw)*float(config['geo_stage_weight'])*geo_value*stage_value
         geo_term = float(gw)*geo_value
         stage_term = float(sw)*stage_value
-        total_score = challenge_term + needs_term + geo_stage_term 
-
+        tech_term = float(tw)*tech_value
+        total_score = challenge_term + needs_term + geo_stage_term + tech_term 
+       
         partner_values_dict = {'Labels': ['Challenges Score', 'Needs Score', 'Geo Score * Stage Score',
-        'Geo Score', 'Stage Score'], 'Scores': [challenge_term, needs_term, geo_stage_term, geo_term, stage_term ]}
+        'Geo Score', 'Stage Score', 'Tech Score'], 'Scores': [challenge_term, needs_term, geo_stage_term, geo_term, stage_term, tech_term ]}
 
         ind_fig = px.bar(partner_values_dict, x='Scores', y='Labels')
         return_string = "Individual Graph for '" + str(partner_name) + "'"
@@ -305,6 +311,8 @@ def update_solver_table(value):
     selected_solver_row_info  = solver_needs_df[solver_needs_df['Org']==value]
     single_row = solver_needs_df[solver_needs_df['Org'] == value].T.reset_index()
     single_row  = single_row.rename(columns = {single_row.columns[1]:'Row'})
+    single_row = single_row.replace("Noval", np.nan)
+    single_row = single_row.dropna(axis=0)
     columns=[
             {"name": i, "id": i, "deletable": False, "selectable": True} for i in single_row.columns
         ]
@@ -329,13 +337,12 @@ def update_partner_table(clickData):
     selected_partner_row_info  = partners_df[partners_df['Org']==partner_name]
     single_row = partners_df[partners_df['Org'] == partner_name].T.reset_index()
     single_row  = single_row.rename(columns = {single_row.columns[1]:'Row'})
-
+    single_row = single_row.replace("Noval", np.nan)
+    single_row = single_row.dropna(axis=0)
     columns=[
             {"name": i, "id": i, "deletable": False, "selectable": True} for i in single_row.columns
         ]
-    print("cols",  single_row.columns)
     data = single_row.to_dict('records')
-    print("actual df",  single_row)
     return [columns, data]
 
 
@@ -345,7 +352,8 @@ def update_partner_table(clickData):
 @app.callback([ Output("geo-weight", "value"),
                 Output("stage-weight", "value"), 
                 Output("challenge-weight", "value"), 
-                Output("needs-weight", "value")],
+                Output("needs-weight", "value"),
+                Output("tech-weight", "value")],
                 [Input('output_bargraph', 'clickData'),
                  Input('solver-dropdown', 'value')])
 def read_weights(clickData, solver): 
@@ -362,10 +370,11 @@ def read_weights(clickData, solver):
             needs_weights = partner_solver_pair[['needs_weights']].astype(str).values.tolist()
             stage_weights = partner_solver_pair[['stage_weights']].astype(str).values.tolist()
             challenge_weights = partner_solver_pair[['challenge_weights']].astype(str).values.tolist()
-            
-            return [geo_weights[0][0], stage_weights[0][0], challenge_weights[0][0], needs_weights[0][0]]
+            tech_weights = partner_solver_pair[['tech_weights']].astype(str).values.tolist()
+
+            return [geo_weights[0][0], stage_weights[0][0], challenge_weights[0][0], needs_weights[0][0], tech_weights[0][0]]
         else: 
-            return ["1","1","1","1"]
+            return ["1","1","1","1","1"]
 
 @app.callback(Output("hidden-div2", "children"),
                 [Input("submit-val", "n_clicks"), 
@@ -373,10 +382,11 @@ def read_weights(clickData, solver):
                 Input("stage-weight", "value"), 
                 Input("challenge-weight", "value"), 
                 Input("needs-weight", "value"),
+                Input("tech-weight", "value"),
                 Input('output_bargraph', 'clickData')],
                 [State('solver-dropdown', 'value')]
                )
-def write_weights(clicks, gw, sw, cw, nw, clickData, solver_name): 
+def write_weights(clicks, gw, sw, cw, nw, tw, clickData, solver_name): 
 
     partner_name = clickData['points'][0]['y']
     partner_solver_weights = pd.read_excel(config['outputs']+config['partner-solver-inital-weights'], sheet_name='Partner Solver Weights')
@@ -387,6 +397,7 @@ def write_weights(clicks, gw, sw, cw, nw, clickData, solver_name):
     partner_solver_weights.loc[partner_solver_row, 'challenge_weights'] = cw
     partner_solver_weights.loc[partner_solver_row, 'needs_weights'] = nw
     partner_solver_weights.loc[partner_solver_row, 'stage_weights'] = sw
+    partner_solver_weights.loc[partner_solver_row, 'tech_weights'] = tw
     partner_solver_weights.to_excel(config['outputs'] +config['partner-solver-inital-weights'], sheet_name='Partner Solver Weights', index=False)
     return None 
 
@@ -396,10 +407,11 @@ def write_weights(clicks, gw, sw, cw, nw, clickData, solver_name):
                 Input("stage-weight", "value"), 
                 Input("challenge-weight", "value"), 
                 Input("needs-weight", "value"),
+                Input("tech-weight", "value"),
                 Input('output_bargraph', 'clickData')],
                 [State('solver-dropdown', 'value')]
                )
-def update_total_score(clicks, gw, sw, cw, nw, clickData, solver_name):
+def update_total_score(clicks, gw, sw, cw, nw, tw,  clickData, solver_name):
 
         partner_name = clickData['points'][0]['y']
        
@@ -418,10 +430,14 @@ def update_total_score(clicks, gw, sw, cw, nw, clickData, solver_name):
         challenge_df = pd.read_excel(config['challenge_match'])
         challenge_value = float(challenge_df[challenge_df["Org_x"]==partner_name].iloc[0][solver_name])
 
+        tech_df = pd.read_excel(config['tech_match'])
+        tech_value = float(challenge_df[tech_df["Org_x"]==partner_name].iloc[0][solver_name])
+
         challenge_term = float(cw)*float(config['challenge_weight'])*challenge_value
         needs_term =  float(nw)*float(config['needs_weight'])*needs_value
         geo_stage_term =  float(sw)*float(gw)*float(config['geo_stage_weight'])*geo_value*stage_value
-        total_score = challenge_term + needs_term + geo_stage_term 
+        tech_term = float(tw)*float(config['tech_weight'])*tech_value
+        total_score = challenge_term + needs_term + geo_stage_term + tech_term
 
         total_score_df[solver_name][(total_score_df['Org_y'] == partner_name)] = str(total_score)
         total_score_df.to_excel(config['total_score_location'], index=False)

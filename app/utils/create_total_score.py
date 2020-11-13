@@ -8,7 +8,7 @@ with open("config.yml") as config_file:
      config = yaml.load(config_file, Loader=yaml.FullLoader)
 
 
-def create_total_score_excel(export_path, geo_weights_pivot, needs_weights_pivot, challenge_weights_pivot, stage_weights_pivot):
+def create_total_score_excel(export_path, geo_weights_pivot, needs_weights_pivot, challenge_weights_pivot, stage_weights_pivot, tech_weights_pivot):
      ''' This function will create the total_score.xlsx
      sheet from the uploaded files
      '''
