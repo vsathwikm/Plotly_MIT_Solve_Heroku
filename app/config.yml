@@ -24,3 +24,5 @@ challenge_weight: 10
 needs_weight: 1
 geo_stage_weight: 100
 tech_weight: 1
+geo_weight: 1
+stage_weight: 1

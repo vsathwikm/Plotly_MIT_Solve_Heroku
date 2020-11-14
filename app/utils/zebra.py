@@ -425,7 +425,7 @@ def inital_partner_solver_weights(solver_df, partners_df):
 
     # Set all the values on the pivot table to 1 and reset index  
     challenges_pivot = merged_pivot_table.copy()
-    challenges_pivot[:] = 1
+    challenges_pivot[:] = 1.0
     challenges_pivot_unpivoted = challenges_pivot.reset_index()
 
     # Unpivot the pivot table acquire a list containing partner and solver matches

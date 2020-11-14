@@ -214,7 +214,7 @@ def update_graph_from_solver_dropdown(value, n_clicks):
     uploaded_df_total_score = pd.read_excel(config['total_score_location'], sheet_name="Sheet1")
 
     # Sort and crop top 5 values for new selected solver
-    total_fig = px.bar(uploaded_df_total_score.sort_values(value, ascending=False)[:5],
+    total_fig = px.bar(uploaded_df_total_score.sort_values(value,  ascending=False)[:5],
                     x=value, 
                     y="Org_y",
                     title = "Output graph for {}".format(value),
@@ -277,14 +277,13 @@ def update_individual_graph(clickData, n_clicks, solver_name):
         
         challenge_term = float(cw)*float(config['challenge_weight'])*challenge_value
         needs_term =  float(nw)*float(config['needs_weight'])*needs_value
-        geo_stage_term =  float(sw)*float(gw)*float(config['geo_stage_weight'])*geo_value*stage_value
-        geo_term = float(gw)*geo_value
-        stage_term = float(sw)*stage_value
-        tech_term = float(tw)*tech_value
-        total_score = challenge_term + needs_term + geo_stage_term + tech_term 
+        geo_term = float(gw)*float(config['geo_weight'])*geo_value
+        stage_term = float(sw)*float(config['stage_weight'])*stage_value
+        tech_term = float(tw)*float(config['tech_weight'])*tech_value
+        total_score = challenge_term + needs_term + geo_term + stage_term + tech_term 
        
-        partner_values_dict = {'Labels': ['Challenges Score', 'Needs Score', 'Geo Score * Stage Score',
-        'Geo Score', 'Stage Score', 'Tech Score'], 'Scores': [challenge_term, needs_term, geo_stage_term, geo_term, stage_term, tech_term ]}
+        partner_values_dict = {'Labels': ['Challenges Score', 'Needs Score',
+        'Geo Score', 'Stage Score', 'Tech Score'], 'Scores': [challenge_term, needs_term, geo_term, stage_term, tech_term ]}
 
         ind_fig = px.bar(partner_values_dict, x='Scores', y='Labels')
         return_string = "Individual Graph for '" + str(partner_name) + "'"
@@ -431,13 +430,18 @@ def update_total_score(clicks, gw, sw, cw, nw, tw,  clickData, solver_name):
         challenge_value = float(challenge_df[challenge_df["Org_x"]==partner_name].iloc[0][solver_name])
 
         tech_df = pd.read_excel(config['tech_match'])
-        tech_value = float(challenge_df[tech_df["Org_x"]==partner_name].iloc[0][solver_name])
+        tech_value = float(tech_df[tech_df["Org_x"]==partner_name].iloc[0][solver_name])
 
         challenge_term = float(cw)*float(config['challenge_weight'])*challenge_value
         needs_term =  float(nw)*float(config['needs_weight'])*needs_value
-        geo_stage_term =  float(sw)*float(gw)*float(config['geo_stage_weight'])*geo_value*stage_value
+        # geo_stage_term =  float(sw)*float(gw)*float(config['geo_stage_weight'])*geo_value*stage_value
+        geo_term = float(gw)*float(config['geo_weight'])*geo_value
+        stage_term = float(sw)*float(config['stage_weight'])*stage_value
+        
         tech_term = float(tw)*float(config['tech_weight'])*tech_value
-        total_score = challenge_term + needs_term + geo_stage_term + tech_term
+
+
+        total_score = challenge_term + needs_term + geo_term + stage_term + tech_term
 
         total_score_df[solver_name][(total_score_df['Org_y'] == partner_name)] = str(total_score)
         total_score_df.to_excel(config['total_score_location'], index=False)
