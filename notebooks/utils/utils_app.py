@@ -49,7 +49,7 @@ def parse_contents(contents, filename, date):
             try:
                 weights = pd.read_excel(decoded_data, sheet_name="Partner Solver Weights")
                 weights.to_excel(config['outputs'] + config['partner-solver-inital-weights'], sheet_name='Partner Solver Weights', index=False)
-                
+
                 partner_match = pd.read_excel(decoded_data, sheet_name="Partner Match")
                 partner_match.to_excel(config['partner_match'], sheet_name= 'Partner Match', index=False)
 
