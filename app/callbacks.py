@@ -93,11 +93,18 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             children = "Generated outputs"
             solver_df =  pd.read_csv(config['solver_location'])
             partners_df = pd.read_csv(config['partner_location'])
+            solver_options = solver_df['Org']
+            solver_options = solver_options.to_frame(name='Solvers')
+            matches = ['None' for x in range(0, solver_options.shape[0])]
+            solver_options['matches'] = matches
+            solver_options.to_excel(config['solver_options'], sheet_name='Solver Options', index=False)       
+           
             with pd.ExcelWriter(config['output_weights'], mode='w') as writer: 
                 solver_df.to_excel(writer, sheet_name='Solver Team Data', index=False)
                 partners_df.to_excel(writer, sheet_name='Partner Data', index=False)
                 partner_solver_weights.to_excel(writer, sheet_name='Partner Solver Weights', index=False)
-        
+               
+            
         else: 
             children = "Input file must be an excel file with three sheets- Solver Team Data, Partner Data, Initial Weights"     
     else: 
@@ -458,54 +465,60 @@ def update_total_score(clicks, gw, sw, cw, nw, tw,  clickData, solver_name):
              Input('solver-dropdown', 'value'),
              Input('confirm-delete-button', 'n_clicks')])
 def partner_select(n_clicks, partner_state,  solver, delete_button): 
-    if n_clicks is None: 
-        raise PreventUpdate
-    else:   
-        style={
+    # if n_clicks is None: 
+    #     raise PreventUpdate
+    # else:   
+    style={
                     # 'height': '60px',
                     'textAlign': 'center',
                     'background-color': ' #1a1c23'
             }
         
-        partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match") 
-        changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-
-        if "output_bargraph" in changed_id: 
-            partner_name =  partner_state['points'][0]['y']       
-            # Check partner is already partnered with solver 
-            check_solver = zebra.check_solver(partner_match_count, partner_name, solver)
-            if check_solver == 1: 
-                style={
-                        # 'height': '60px',
-                        'textAlign': 'center',
-                        'background-color':'green'
-                    }
-            
-            else: 
-                style={
-                        # 'height': '60px',
-                        'textAlign': 'center',
-                        'background-color':' #1a1c23'
-                    }
-                
-        elif "confirm-yes-button" in changed_id:        
-            partner_name =  partner_state['points'][0]['y']       
-            outputs = zebra.update_colval(partner_match_count, solver, partner_name, "Partners", "Solvers")
-            if outputs != 1: 
-                partner_match_output = outputs[0]
-                partner_match_output.to_excel(config['partner_match'], sheet_name="Partner Match", index=False)
+    partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match") 
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    solver_options = pd.read_excel(config['solver_options'])
+    if "output_bargraph" in changed_id: 
+        partner_name =  partner_state['points'][0]['y']       
+        # Check partner is already partnered with solver 
+        # check_solver = zebra.check_solver(partner_match_count, partner_name, solver)
+        list_matches = solver_options[solver_options['Solvers'] == solver]['matches'][0].split(',')
+         
+        if partner_name in list_matches: 
             style={
-                        # 'height': '60px',
-                        'textAlign': 'center',
-                        'background-color': 'green'
-                }        
-        elif "confirm-delete-button" in changed_id: 
-            style={
-                        # 'height': '60px',
-                        'textAlign': 'center',
-                        'background-color': ' #1a1c23'
+                    # 'height': '60px',
+                    'textAlign': 'center',
+                    'background-color':'green'
                 }
-              
+        
+        else: 
+            style={
+                    # 'height': '60px',
+                    'textAlign': 'center',
+                    'background-color':' #1a1c23'
+                }
+        
+
+    elif "confirm-yes-button" in changed_id:        
+        partner_name =  partner_state['points'][0]['y']       
+        outputs = zebra.update_colval(partner_match_count, solver, partner_name, "Partners", "Solvers")
+        solver_match_update = zebra.update_colval(solver_options, partner_name, solver, "Solvers", "matches")
+
+        if outputs != 1: 
+            partner_match_output = outputs[0]
+            partner_match_output.to_excel(config['partner_match'], sheet_name="Partner Match", index=False)
+            solver_match_update[0].to_excel(config['solver_options'], index=False)      
+        style={
+                    # 'height': '60px',
+                    'textAlign': 'center',
+                    'background-color': 'green'
+            }        
+    elif "confirm-delete-button" in changed_id: 
+        style={
+                    # 'height': '60px',
+                    'textAlign': 'center',
+                    'background-color': ' #1a1c23'
+            }
+            
     return style
 
 
@@ -518,16 +531,18 @@ def partner_delete(n_clicks, partner_state, solver  ):
     if n_clicks is None: 
         raise PreventUpdate
     else:   
-       
+        solver_options = pd.read_excel(config['solver_options'], )
         partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match")
         changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
         msg = " "        
         if "confirm-delete-button" in changed_id: 
             partner_name =  partner_state['points'][0]['y']       
             outputs = zebra.delete_colval(partner_match_count, solver, partner_name, "Partners", "Solvers")
+            delete_partner = zebra.delete_colval(solver_options, partner_name, solver, "Solvers", "matches")    
             if outputs != 0: 
                 partner_match_output = outputs[0]
                 partner_match_output.to_excel(config['partner_match'], sheet_name="Partner Match", index=False)
+                delete_partner[0].to_excel(config['solver_options'], index=False)  
                 msg = "Deleted value"
               
             else: 
