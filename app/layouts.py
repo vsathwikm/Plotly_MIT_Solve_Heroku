@@ -169,7 +169,7 @@ layout1 = html.Div(children=[
                         id='output_bargraph',
                         # figure= total_fig
                     ),
-                ], className="six columns"),
+                ], className="twelve columns"),
 
                 html.Div([
                     html.H3(id='individual_graph_title', children='Individual Graph', style={'textAlign': 'center'}),
