@@ -221,14 +221,15 @@ def update_graph_from_solver_dropdown(value, n_clicks):
     uploaded_df_total_score = pd.read_excel(config['total_score_location'], sheet_name="Sheet1")
 
     # Sort and crop top 5 values for new selected solver
-    total_fig = px.bar(uploaded_df_total_score.sort_values(value,  ascending=False)[:5],
+    total_fig = px.bar(uploaded_df_total_score.sort_values(value,  ascending=False)[:50],
                     x=value, 
                     y="Org_y",
                     title = "Output graph for {}".format(value),
                     labels = {'Org_y':'PARTNER',
-                                value:'Total Score'})
+                                value:'Total Score'}
+                    )
                         
-    total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
+    total_fig.update_layout(yaxis={'categoryorder':'total ascending', 'dtick':1}, height=1200)
     return total_fig
 
 
