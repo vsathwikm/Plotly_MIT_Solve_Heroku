@@ -18,6 +18,7 @@ partner-solver-inital-weights: 'partner-solver-init-weights.xlsx'
 output_weights: 'outputs/partner-solver-all-sheets.xlsx'
 partner_match: "outputs/partner_match.xlsx"
 solver_options: "outputs/solver_options.xlsx"
+history: "outputs/history.xlsx"
 max_matches: 5
 partner_thres: 0
 partner_inter: 2 

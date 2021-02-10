@@ -4,7 +4,7 @@ import io
 
 
 
-
+from icecream import ic
 # for creating the new total_score.xlsx
 from utils.create_total_score import create_total_score_excel
 from utils import utils_app
@@ -42,6 +42,7 @@ from dash.exceptions import PreventUpdate
 import time
 import os 
 import numpy as np
+from openpyxl import load_workbook
 
 with open("config.yml") as config_file: 
      config = yaml.load(config_file, Loader=yaml.FullLoader)
@@ -68,6 +69,8 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
     return: irrelavent output, will never be printed out and is used to 
     comply with needing an Output for every callback
     '''
+    
+
     if not os.path.exists(config['outputs']): 
         os.makedirs(config['outputs'])
     if list_of_contents is not None:
@@ -219,16 +222,34 @@ def update_graph_from_solver_dropdown(value, n_clicks):
     #     time.sleep(0.01)
     # Checks if new files have been uploaded yet instead of hard coded
     uploaded_df_total_score = pd.read_excel(config['total_score_location'], sheet_name="Sheet1")
+    geo_df = pd.read_excel(config['geo_match']).sort_values(value,  ascending=False)[:50] 
+    needs_df = pd.read_excel(config['needs_match']).sort_values(value,  ascending=False)[:50]
+    stage_df = pd.read_excel(config['stage_match']).sort_values(value,  ascending=False)[:50]
+    challenge_df = pd.read_excel(config['challenge_match']).sort_values(value,  ascending=False)[:50]
+    tech_df = pd.read_excel(config['tech_match']).sort_values(value,  ascending=False)[:50]
+    partners_for_solver = uploaded_df_total_score.sort_values(value,  ascending=False)[:50]
 
-    # Sort and crop top 5 values for new selected solver
-    total_fig = px.bar(uploaded_df_total_score.sort_values(value,  ascending=False)[:5],
-                    x=value, 
+    total_score_df  = partners_for_solver['Org_y'].to_frame()
+
+    total_score_df = total_score_df.assign(geo_score=geo_df[ value].values*config['geo_weight'], 
+                                            needs_score=needs_df[value].values*config['needs_weight'],
+                                            stage_score=stage_df[value].values*config['stage_weight'],
+                                            challenge_score=challenge_df[value].values*config['challenge_weight'],
+                                            tech_score=tech_df[value].values*config['tech_weight'])
+    total_score_df['total_score'] = total_score_df.sum(axis=1, skipna=True)
+
+    
+    total_fig = px.bar(total_score_df.sort_values('total_score', ascending=False),
+                    x=['geo_score', 'needs_score', 'stage_score', 'challenge_score', 'tech_score'], 
                     y="Org_y",
                     title = "Output graph for {}".format(value),
                     labels = {'Org_y':'PARTNER',
-                                value:'Total Score'})
-                        
-    total_fig.update_layout(yaxis={'categoryorder':'total ascending'})
+                                value:'Total Score'},
+                    hover_data=["total_score"]            
+                    )
+
+
+    total_fig.update_layout(yaxis={'categoryorder':'total ascending', 'dtick':1}, height=1200)
     return total_fig
 
 
@@ -452,7 +473,6 @@ def update_total_score(clicks, gw, sw, cw, nw, tw,  clickData, solver_name):
 
         total_score_df[solver_name][(total_score_df['Org_y'] == partner_name)] = str(total_score)
         total_score_df.to_excel(config['total_score_location'], index=False)
-
         return None
 
 
@@ -502,11 +522,23 @@ def partner_select(n_clicks, partner_state,  solver, delete_button):
         partner_name =  partner_state['points'][0]['y']       
         outputs = zebra.update_colval(partner_match_count, solver, partner_name, "Partners", "Solvers")
         solver_match_update = zebra.update_colval(solver_options, partner_name, solver, "Solvers", "matches")
-
-        if outputs != 1: 
+        if outputs != 1:
+            print("outputs is not 1") 
             partner_match_output = outputs[0]
             partner_match_output.to_excel(config['partner_match'], sheet_name="Partner Match", index=False)
-            solver_match_update[0].to_excel(config['solver_options'], index=False)      
+            solver_match_update[0].to_excel(config['solver_options'], index=False)     
+            
+            match_row = pd.DataFrame({'partner': [partner_name], 'solver': [solver],  'match': ['yes'],  'datetime': [str(datetime.datetime.now())],})
+            writer = pd.ExcelWriter(config['history'], engine='openpyxl')
+            writer.book = load_workbook(config['history'])
+            writer.sheets = dict((ws.title, ws) for ws in writer.book.worksheets)
+            reader = pd.read_excel(config['history'])
+            match_row.to_excel(writer,index=False,header=False,startrow=len(reader)+1)
+            writer.close()
+
+
+                    
+
         style={
                     # 'height': '60px',
                     'textAlign': 'center',
