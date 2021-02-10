@@ -169,12 +169,8 @@ layout1 = html.Div(children=[
                         id='output_bargraph',
                         # figure= total_fig
                     ),
-                ], className="twelve columns"),
+                ], style={'overflowY': 'scroll', 'height': 500}, className="twelve columns"),
 
-                html.Div([
-                    html.H3(id='individual_graph_title', children='Individual Graph', style={'textAlign': 'center'}),
-                    dcc.Graph(id='individual_graph', figure={'data': []})
-                ], className="six columns"),
             ], className="row"),
 
 
