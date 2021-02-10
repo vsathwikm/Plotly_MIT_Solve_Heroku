@@ -4,7 +4,6 @@ import io
 
 
 
-from icecream import ic
 # for creating the new total_score.xlsx
 from utils.create_total_score import create_total_score_excel
 from utils import utils_app
