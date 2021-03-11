@@ -1,6 +1,7 @@
 import base64
 import datetime
 import io
+from icecream import ic
 
 
 
@@ -140,6 +141,7 @@ def update_output2(list_of_contents, list_of_names, list_of_dates):
             
 
             partner_solver_weights = zebra.inital_partner_solver_weights(solver_df, partners_df)
+            ic(partner_solver_weights)
             num_partners = len(partners_df['Org'])
             partner_names = partners_df['Org'].values
             none_list = ['None' for x in range(0,num_partners)]
