@@ -1,10 +1,10 @@
 import base64
 import datetime
 import io
-
-
-
 from icecream import ic
+
+
+
 # for creating the new total_score.xlsx
 from utils.create_total_score import create_total_score_excel
 from utils import utils_app
@@ -136,7 +136,6 @@ def update_output2(list_of_contents, list_of_names, list_of_dates):
         number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
         solver_df =  pd.read_csv(config['solver_location'])
         partners_df = pd.read_csv(config['partner_location'])
-
         if number_sheets < 3: 
             
 
@@ -238,8 +237,7 @@ def update_graph_from_solver_dropdown(value, n_clicks):
                                             tech_score=tech_df[value].values*config['tech_weight'])
     total_score_df['total_score'] = total_score_df.sum(axis=1, skipna=True)
 
-    
-    total_fig = px.bar(total_score_df.sort_values('total_score', ascending=False),
+    total_fig = px.bar(total_score_df.sort_values('total_score', ascending=True),
                     x=['geo_score', 'needs_score', 'stage_score', 'challenge_score', 'tech_score'], 
                     y="Org_y",
                     title = "Output graph for {}".format(value),
@@ -248,8 +246,8 @@ def update_graph_from_solver_dropdown(value, n_clicks):
                     hover_data=["total_score"]            
                     )
 
-
-    total_fig.update_layout(yaxis={'categoryorder':'total ascending', 'dtick':1}, height=1200)
+    total_fig.update_layout(height=1200)
+    # total_fig.update_layout(xaxis={'categoryorder':'total ascending', 'dtick':1}, height=1200)
     return total_fig
 
 
@@ -366,6 +364,7 @@ def update_partner_table(clickData):
     single_row  = single_row.rename(columns = {single_row.columns[1]:'Row'})
     single_row = single_row.replace("Noval", np.nan)
     single_row = single_row.dropna(axis=0)
+    
     columns=[
             {"name": i, "id": i, "deletable": False, "selectable": True} for i in single_row.columns
         ]
@@ -595,7 +594,7 @@ def style_partner_table(yes_button, delete_button, partner_click, solver):
                 'height': 'auto',
                 'textAlign': 'center',
                 'font_family': 'helvetica',
-                'font_size': '20px',
+                'font_size': '12px',
             }   
     if partner_click:
         partner_name=  partner_click['points'][0]['y']  
