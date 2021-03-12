@@ -26,6 +26,30 @@ layout1 = html.Div(children=[
                 }
             ),
             
+
+                html.H6('Select a Solver'),
+                html.P('As soon as you login please click update solver to start matching'),
+                html.Button('Update solver', id='update-solver-btn', n_clicks=0),
+                # loading symbol
+                html.Br(), 
+                html.Br(), 
+                dcc.Loading(id="upload-loading",
+
+                        # Solver drop down menu 
+                        children = [dcc.Dropdown(
+                                                id='solver-dropdown',
+                                                value = '',  
+                                                style=
+                                    { 'width': '400px',
+                                      'color': 'Black',
+                                      'background-color': '#white',
+                                    } 
+                                )
+                                
+                        ]
+                ),
+
+
             html.Div([
                 html.H4("Upload Excel files"),
                 html.P("Upload an excel file with four sheets labeled: Solver Team Data, Partner Data, Initial Weights, Partner Match"),
@@ -105,25 +129,7 @@ layout1 = html.Div(children=[
                 ]),
                 html.Br(),
 
-                html.Label('Select a Solver'),
-                html.H6('Once you upload partner-solver data the drop down will be populated'),
-                html.Button('Update solver', id='update-solver-btn', n_clicks=0),
-                # loading symbol 
-                dcc.Loading(id="upload-loading",
-
-                        # Solver drop down menu 
-                        children = [dcc.Dropdown(
-                                                id='solver-dropdown',
-                                                value = '',  
-                                                style=
-                                    { 'width': '400px',
-                                      'color': '#212121',
-                                      'background-color': '#212121',
-                                    } 
-                                )
-                                
-                        ]
-                ),
+            
                 html.Br(), 
                 html.Br(), 
                 html.Br(), 
@@ -251,7 +257,7 @@ layout1 = html.Div(children=[
                     'height': 'auto',
                     'textAlign': 'center',
                     'font_family': 'helvetica',
-                    'font_size': '20px',
+                    'font_size': '12px',
                     'color': 'black'
                 },
                 style_header={
@@ -263,14 +269,14 @@ layout1 = html.Div(children=[
             html.H4(children='Clicked on Partner Information',style={'textAlign': 'center'}),
             dash_table.DataTable(
                 id='clicked_on_partner_table',
-                style_cell={
-                    'whiteSpace': 'normal',
-                    'height': 'auto',
-                    'textAlign': 'center',
-                    'font_family': 'helvetica',
-                    'font_size': '20px',
-                    'color': 'green'
-                },
+                # style_cell={
+                #     'whiteSpace': 'normal',
+                #     'height': 'auto',
+                #     'textAlign': 'center',
+                #     'font_family': 'helvetica',
+                #     'font_size': '12px',
+                #     'color': 'green'
+                # },
                 style_header={
                 'backgroundColor': 'rgb(30, 30, 30)',
                 'color': 'white',
