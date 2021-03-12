@@ -25,6 +25,10 @@ def create_total_score_excel(export_path, geo_weights_pivot, needs_weights_pivot
      # filled nan with 0 
      solvers_df = solvers_df.fillna("Noval")
      
+     # Minor cleaning 
+     partners_df = partners_df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+     solvers_df = solvers_df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
      # CHALLENGE MATCH
      challenge_matched = zebra.challenge_match_v2(solvers_df, partners_df, export_path)
 
@@ -47,7 +51,6 @@ def create_total_score_excel(export_path, geo_weights_pivot, needs_weights_pivot
      needs_term =  pd.DataFrame(needs_weights_pivot.values*needs_matched.astype(float).values, columns=needs_weights_pivot.columns, index=needs_weights_pivot.index)['needs_weights']
      tech_term =  pd.DataFrame(tech_weights_pivot.values*tech_matched.astype(float).values, columns=tech_weights_pivot.columns, index=tech_weights_pivot.index)['tech_weights']
      
-
      total_score = challenge_term  + geo_term + stage_term + needs_term + tech_term
      total_score = total_score.astype(float)
      total_score.to_excel(export_path+"/total_score_from_upload.xlsx")
