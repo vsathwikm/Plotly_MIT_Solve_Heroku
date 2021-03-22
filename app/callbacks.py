@@ -4,7 +4,6 @@ import io
 
 
 
-
 # for creating the new total_score.xlsx
 from utils.create_total_score import create_total_score_excel
 from utils import utils_app
@@ -496,13 +495,16 @@ def partner_select(n_clicks, partner_state,  solver, delete_button):
     partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match") 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     solver_options = pd.read_excel(config['solver_options'])
+    
     if "output_bargraph" in changed_id: 
-        partner_name =  partner_state['points'][0]['y']       
+        partner_name =  partner_state['points'][0]['y'] 
+   
         # Check partner is already partnered with solver 
         # check_solver = zebra.check_solver(partner_match_count, partner_name, solver)
-        list_matches = solver_options[solver_options['Solvers'] == solver]['matches'][0].split(',')
-         
+        
+        list_matches = solver_options[solver_options['Solvers'] == solver]['matches'].tolist()[0].split(',')
         if partner_name in list_matches: 
+            
             style={
                     # 'height': '60px',
                     'textAlign': 'center',
