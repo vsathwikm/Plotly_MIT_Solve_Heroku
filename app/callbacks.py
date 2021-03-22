@@ -1,7 +1,6 @@
 import base64
 import datetime
 import io
-from icecream import ic
 
 
 
@@ -43,7 +42,6 @@ import time
 import os 
 import numpy as np
 from openpyxl import load_workbook
-
 with open("config.yml") as config_file: 
      config = yaml.load(config_file, Loader=yaml.FullLoader)
 
@@ -75,7 +73,6 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         os.makedirs(config['outputs'])
     if list_of_contents is not None:
         number_sheets = utils_app.parse_contents(list_of_contents[0], list_of_names[0], list_of_dates[0])
-        
         if number_sheets == 4: 
             partner_solver_weights = pd.read_excel(config['outputs'] + config['partner-solver-inital-weights'], sheet_name= 'Partner Solver Weights')
             geo_weights_pivot = pd.pivot(partner_solver_weights[['Org_y', 'Org_x', 'geo_weights']], columns='Org_x', index='Org_y' )
@@ -91,7 +88,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
                                                         challenge_weights_pivot, 
                                                         stage_weights_pivot, 
                                                         tech_weights_pivot )
-
+            
                    # new_total_score.insert(0, "Partners", Partners, True)
             children = "Generated outputs"
             solver_df =  pd.read_csv(config['solver_location'])
@@ -356,6 +353,7 @@ def update_partner_table(clickData):
     param: solver_name (str) - name of the selected solver from the dropdown menu
     return: data (dict) - a dictionary containing data that will populate the solver table
     '''
+    
     # Checks if new files have been uploaded yet instead of hard coded
     partner_name = clickData['points'][0]['y']
     partners_df = pd.read_csv(config['partner_location'])
@@ -364,7 +362,6 @@ def update_partner_table(clickData):
     single_row  = single_row.rename(columns = {single_row.columns[1]:'Row'})
     single_row = single_row.replace("Noval", np.nan)
     single_row = single_row.dropna(axis=0)
-    
     columns=[
             {"name": i, "id": i, "deletable": False, "selectable": True} for i in single_row.columns
         ]
@@ -471,6 +468,8 @@ def update_total_score(clicks, gw, sw, cw, nw, tw,  clickData, solver_name):
         total_score = challenge_term + needs_term + geo_term + stage_term + tech_term
 
         total_score_df[solver_name][(total_score_df['Org_y'] == partner_name)] = str(total_score)
+        
+
         total_score_df.to_excel(config['total_score_location'], index=False)
         return None
 
@@ -496,13 +495,16 @@ def partner_select(n_clicks, partner_state,  solver, delete_button):
     partner_match_count = pd.read_excel(config['partner_match'], sheet_name="Partner Match") 
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     solver_options = pd.read_excel(config['solver_options'])
+    
     if "output_bargraph" in changed_id: 
-        partner_name =  partner_state['points'][0]['y']       
+        partner_name =  partner_state['points'][0]['y'] 
+   
         # Check partner is already partnered with solver 
         # check_solver = zebra.check_solver(partner_match_count, partner_name, solver)
-        list_matches = solver_options[solver_options['Solvers'] == solver]['matches'][0].split(',')
-         
+        
+        list_matches = solver_options[solver_options['Solvers'] == solver]['matches'].tolist()[0].split(',')
         if partner_name in list_matches: 
+            
             style={
                     # 'height': '60px',
                     'textAlign': 'center',

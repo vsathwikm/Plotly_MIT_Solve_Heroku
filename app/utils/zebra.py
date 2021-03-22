@@ -615,6 +615,9 @@ def needs_matched_v2(solvers_df, partners_df, export_path, export=True):
     solver_needs_cols = solvers_df[needs_columns]
     needs_match = match_multi(partner_prefs_cols, solver_needs_cols)
     needs_match = needs_match.fillna(0)
+    if 'Noval' in needs_match.columns: 
+        needs_match = needs_match.drop(columns=['Noval'])
+
     if export == True:
             needs_match.to_excel("".join([export_path, "needs_match.xlsx"]))    
     return needs_match
